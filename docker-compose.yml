@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: kajve_postgres
+    environment:
+      POSTGRES_USER: kajve_user
+      POSTGRES_PASSWORD: kajve_secure_password
+      POSTGRES_DB: kajve_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - kajve_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kajve_user -d kajve_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: kajve_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - kajve_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # API Mobile
+  api-mobile:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kajve_api_mobile
+    environment:
+      PORT: 8080
+      ENVIRONMENT: development
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: kajve_user
+      DB_PASSWORD: kajve_secure_password
+      DB_NAME: kajve_db
+      DB_SSL_MODE: disable
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ""
+      REDIS_DB: 0
+      JWT_SECRET: your_super_secret_jwt_key_change_in_production_min_32_chars
+      JWT_EXPIRATION_HOURS: 24
+      JWT_REFRESH_EXPIRATION_HOURS: 720
+      CORS_ALLOWED_ORIGIN: http://localhost:3000,https://yourdomain.com
+      API_WEB_URL: http://api-web:3001
+      RATE_LIMIT_REQ_PER_MIN: 100
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - kajve_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  kajve_network:
+    driver: bridge

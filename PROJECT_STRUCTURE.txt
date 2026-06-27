@@ -1,0 +1,167 @@
+ESTRUCTURA DEL PROYECTO KAJVE API-MOBILE
+==========================================
+
+api-mobile/
+├── cmd/
+│   └── main.go                          # Punto de entrada de la aplicación
+├── config/
+│   └── config.go                        # Configuración centralizada desde .env
+├── internal/
+│   ├── domain/
+│   │   └── entities/
+│   │       └── entities.go              # Entidades de negocio (Usuario, Lote, Sensor, etc.)
+│   ├── application/
+│   │   ├── interfaces/
+│   │   │   ├── repositories.go          # Interfaces de repositorios (puertos)
+│   │   │   └── services.go              # Interfaces de servicios (casos de uso)
+│   │   └── usecases/
+│   │       ├── auth_service.go          # Lógica de autenticación
+│   │       ├── device_service.go        # Lógica de vinculación de dispositivos
+│   │       ├── lote_service.go          # Lógica de lotes
+│   │       ├── lectura_service.go       # Lógica de lecturas ambientales
+│   │       ├── alerta_service.go        # Lógica de alertas
+│   │       ├── prediccion_service.go    # Lógica de predicciones
+│   │       ├── recomendacion_service.go # Lógica de recomendaciones
+│   │       ├── historial_service.go     # Lógica de historial
+│   │       └── reporte_service.go       # Lógica de reportes
+│   ├── infrastructure/
+│   │   ├── db/
+│   │   │   ├── postgres.go              # Pool y métodos de PostgreSQL
+│   │   │   ├── usuario_repository.go    # Implementación de UsuarioRepository
+│   │   │   ├── sensor_repository.go     # Implementación de SensorRepository
+│   │   │   ├── lote_repository.go       # Implementación de LoteRepository
+│   │   │   ├── lectura_repository.go    # Implementación de LecturaRepository
+│   │   │   ├── alerta_repository.go     # Implementación de AlertaRepository
+│   │   │   ├── prediccion_repository.go # Implementación de PrediccionRepository
+│   │   │   ├── recomendacion_repo.go    # Implementación de RecomendacionRepository
+│   │   │   ├── historial_repository.go  # Implementación de HistorialRepository
+│   │   │   ├── reporte_repository.go    # Implementación de ReporteRepository
+│   │   │   └── provisioning_token_repo.go # Implementación de ProvisioningTokenRepository
+│   │   ├── redis/
+│   │   │   └── client.go                # Cliente Redis (Pub/Sub)
+│   │   └── mqtt/
+│   │       └── client.go                # Cliente MQTT
+│   ├── delivery/
+│   │   ├── http/
+│   │   │   ├── handlers/
+│   │   │   │   ├── auth_handler.go      # Handlers para /auth/*
+│   │   │   │   ├── device_handler.go    # Handler para /devices/link
+│   │   │   │   ├── lote_handler.go      # Handlers para /lotes/*
+│   │   │   │   ├── lectura_handler.go   # Handler para /lotes/{id}/lecturas
+│   │   │   │   ├── alerta_handler.go    # Handler para /lotes/{id}/alertas
+│   │   │   │   ├── prediccion_handler.go# Handler para /lotes/{id}/predicciones
+│   │   │   │   ├── recomendacion_hndlr.go # Handler para /lotes/{id}/recomendaciones
+│   │   │   │   ├── historial_handler.go # Handler para /lotes/{id}/historial
+│   │   │   │   └── reporte_handler.go   # Handlers para /reportes/*
+│   │   │   └── middleware/
+│   │   │       ├── jwt_auth.go          # Middleware de autenticación JWT
+│   │   │       ├── rate_limiter.go      # Middleware de rate limiting
+│   │   │       └── common.go            # CORS, JSON Content-Type
+│   │   └── websocket/
+│   │       └── (placeholder para ws)
+│   └── utils/
+│       ├── response.go                  # Funciones para respuestas JSON
+│       └── logger.go                    # Logger personalizado
+├── scripts/
+│   ├── init.sql                         # Script de inicialización de BD
+│   └── test-endpoints.sh                # Script para testear endpoints
+├── .env.example                         # Variables de entorno de ejemplo
+├── .gitignore                           # Git ignore
+├── go.mod                               # Definición de módulo Go
+├── go.sum                               # Checksums de dependencias
+├── Dockerfile                           # Imagen Docker de la app
+├── docker-compose.yml                   # Orquestación de contenedores
+├── Makefile                             # Automatización de tareas
+├── setup.sh                             # Script de configuración inicial
+├── ENDPOINTS.json                       # Documentación de endpoints
+└── Postman.json                         # Colección de Postman
+
+ARQUITECTURA
+============
+
+Patrón: Clean Architecture
+Capas:
+  1. Domain (Entidades): Núcleo del negocio, sin dependencias
+  2. Application (Usecases): Lógica de negocio, interfaces
+  3. Infrastructure (Repositorios): Implementación de acceso a datos
+  4. Delivery (Handlers): Presentación HTTP
+
+Flujo de una solicitud:
+  HTTP Request → Middleware → Handler → Service → Repository → DB
+                    ↑                                           ↓
+                    ←───── Response JSON ←────────────────────
+
+CARACTERÍSTICAS PRINCIPALES
+===========================
+
+✓ JWT Authentication con access y refresh tokens
+✓ Rate Limiting: 100 req/min por IP
+✓ Row-Level Security en PostgreSQL (RLS)
+✓ Sin frameworks pesados (net/http estándar)
+✓ Chi router para ruteo
+✓ pgx/v5 para acceso directo a PostgreSQL
+✓ Validación con go-playground/validator
+✓ CORS restrictivo
+✓ Tipado estricto (no interface{})
+✓ Manejo centralizado de errores
+✓ PostgreSQL + Redis
+✓ Docker Compose para orquestación
+
+ENDPOINTS DISPONIBLES
+=====================
+
+PÚBLICO:
+  POST /auth/login                    - Login de usuario
+  POST /auth/refresh                  - Renovar token
+  GET  /health                        - Health check
+
+PROTEGIDO (Require JWT):
+  GET  /lotes                         - Listar lotes del usuario
+  POST /lotes                         - Crear nuevo lote
+  GET  /lotes/{id}                    - Obtener lote específico
+  GET  /lotes/{id}/lecturas           - Obtener lecturas ambientales
+  GET  /lotes/{id}/alertas            - Obtener alertas
+  GET  /lotes/{id}/predicciones       - Obtener predicciones
+  GET  /lotes/{id}/recomendaciones    - Obtener recomendaciones
+  GET  /lotes/{id}/historial          - Obtener historial
+  POST /devices/link                  - Vincular ESP32
+  POST /reportes                       - Solicitar reporte
+
+SEGURIDAD
+=========
+
+- JWT: HS256 con secret desde .env
+- Contraseñas: bcrypt con cost 12
+- Provisioning Tokens: SHA256 hash almacenado
+- RLS: PostgreSQL con app.current_user_id
+- CORS: Solo origen permitido en .env
+- Rate Limiting: IP-based con golang.org/x/time/rate
+- Validación: Todos los inputs validados
+- HTTPS: Configurable en .env
+
+PRIMEROS PASOS
+==============
+
+1. Setup:
+   bash setup.sh
+
+2. Docker (recomendado):
+   docker-compose up -d
+
+3. Verificar:
+   curl http://localhost:8080/health
+
+4. Login:
+   curl -X POST http://localhost:8080/auth/login \
+     -H "Content-Type: application/json" \
+     -d '{"email":"user@example.com","password":"password"}'
+
+5. Usar token:
+   curl -H "Authorization: Bearer <token>" \
+     http://localhost:8080/lotes
+
+Más información en:
+  - ENDPOINTS.json - Especificación de endpoints
+  - Postman.json - Colección de Postman
+  - scripts/test-endpoints.sh - Script de testing
+  - Makefile - Comandos disponibles

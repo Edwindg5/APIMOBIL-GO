@@ -1,0 +1,264 @@
+{
+  "api_mobile": {
+    "version": "1.0.0",
+    "base_url": "http://localhost:8080",
+    "description": "Mobile API para app Flutter de Productores",
+    "public_endpoints": [
+      {
+        "method": "POST",
+        "path": "/auth/login",
+        "description": "Autentica un usuario y retorna JWT tokens",
+        "request_body": {
+          "email": "string (required)",
+          "password": "string (required)"
+        },
+        "response": {
+          "access_token": "string",
+          "refresh_token": "string",
+          "expires_in": "integer (segundos)",
+          "usuario": {
+            "id": "integer",
+            "email": "string",
+            "nombre_completo": "string",
+            "rol": "string"
+          }
+        },
+        "status_code": 200
+      },
+      {
+        "method": "POST",
+        "path": "/auth/refresh",
+        "description": "Genera un nuevo access token",
+        "request_body": {
+          "refresh_token": "string (required)"
+        },
+        "response": {
+          "access_token": "string",
+          "expires_in": "integer (segundos)"
+        },
+        "status_code": 200
+      },
+      {
+        "method": "GET",
+        "path": "/health",
+        "description": "Health check del servidor",
+        "response": {
+          "status": "ok"
+        },
+        "status_code": 200
+      }
+    ],
+    "protected_endpoints": [
+      {
+        "method": "GET",
+        "path": "/lotes",
+        "description": "Obtiene todos los lotes del usuario autenticado",
+        "auth_required": true,
+        "response": [
+          {
+            "id": "integer",
+            "nombre": "string",
+            "descripcion": "string",
+            "area": "number",
+            "estado": "string (activo|cosechado|inactivo)",
+            "sensor_id": "integer | null",
+            "created_at": "ISO8601",
+            "updated_at": "ISO8601"
+          }
+        ],
+        "status_code": 200
+      },
+      {
+        "method": "POST",
+        "path": "/lotes",
+        "description": "Crea un nuevo lote",
+        "auth_required": true,
+        "request_body": {
+          "nombre": "string (required)",
+          "descripcion": "string",
+          "area": "number (required, >= 0)"
+        },
+        "response": {
+          "id": "integer"
+        },
+        "status_code": 201
+      },
+      {
+        "method": "GET",
+        "path": "/lotes/{id}",
+        "description": "Obtiene un lote específico",
+        "auth_required": true,
+        "params": {
+          "id": "integer (lote_id)"
+        },
+        "response": {
+          "id": "integer",
+          "usuario_id": "integer",
+          "nombre": "string",
+          "descripcion": "string",
+          "area": "number",
+          "sensor_id": "integer | null",
+          "estado": "string",
+          "created_at": "ISO8601",
+          "updated_at": "ISO8601"
+        },
+        "status_code": 200
+      },
+      {
+        "method": "GET",
+        "path": "/lotes/{id}/lecturas",
+        "description": "Obtiene las últimas lecturas ambientales",
+        "auth_required": true,
+        "params": {
+          "id": "integer (lote_id)",
+          "limit": "integer (default: 50, max: 1000)"
+        },
+        "response": [
+          {
+            "id": "integer",
+            "lote_id": "integer",
+            "sensor_id": "integer",
+            "temperatura": "number",
+            "humedad": "number",
+            "presion": "number",
+            "created_at": "ISO8601"
+          }
+        ],
+        "status_code": 200
+      },
+      {
+        "method": "GET",
+        "path": "/lotes/{id}/alertas",
+        "description": "Obtiene las alertas del lote",
+        "auth_required": true,
+        "params": {
+          "id": "integer (lote_id)"
+        },
+        "response": [
+          {
+            "id": "integer",
+            "lote_id": "integer",
+            "tipo": "string",
+            "mensaje": "string",
+            "nivel": "string (info|warning|critical)",
+            "leida": "boolean",
+            "created_at": "ISO8601",
+            "updated_at": "ISO8601"
+          }
+        ],
+        "status_code": 200
+      },
+      {
+        "method": "GET",
+        "path": "/lotes/{id}/predicciones",
+        "description": "Obtiene las predicciones del lote",
+        "auth_required": true,
+        "params": {
+          "id": "integer (lote_id)"
+        },
+        "response": [
+          {
+            "id": "integer",
+            "lote_id": "integer",
+            "prediccion": "string",
+            "probabilidad": "number",
+            "created_at": "ISO8601"
+          }
+        ],
+        "status_code": 200
+      },
+      {
+        "method": "GET",
+        "path": "/lotes/{id}/recomendaciones",
+        "description": "Obtiene las recomendaciones del lote",
+        "auth_required": true,
+        "params": {
+          "id": "integer (lote_id)"
+        },
+        "response": [
+          {
+            "id": "integer",
+            "lote_id": "integer",
+            "accion": "string",
+            "razon": "string",
+            "prioridad": "string (baja|media|alta)",
+            "created_at": "ISO8601"
+          }
+        ],
+        "status_code": 200
+      },
+      {
+        "method": "GET",
+        "path": "/lotes/{id}/historial",
+        "description": "Obtiene el historial de eventos del lote",
+        "auth_required": true,
+        "params": {
+          "id": "integer (lote_id)"
+        },
+        "response": [
+          {
+            "id": "integer",
+            "lote_id": "integer",
+            "tipo": "string",
+            "descripcion": "string",
+            "created_at": "ISO8601"
+          }
+        ],
+        "status_code": 200
+      },
+      {
+        "method": "POST",
+        "path": "/devices/link",
+        "description": "Vincula un ESP32 a un usuario",
+        "auth_required": true,
+        "request_body": {
+          "esp32_id": "string (required)",
+          "provisioning_token": "string (required, de un solo uso)",
+          "lote_name": "string (required)"
+        },
+        "response": {
+          "sensor_id": "integer",
+          "lote_id": "integer",
+          "message": "string",
+          "linked_at": "ISO8601"
+        },
+        "status_code": 200
+      },
+      {
+        "method": "POST",
+        "path": "/reportes",
+        "description": "Solicita la generación de un reporte",
+        "auth_required": true,
+        "request_body": {
+          "lote_id": "integer (required)",
+          "tipo": "string (required, oneof: diario|semanal|mensual)"
+        },
+        "response": {
+          "id": "integer"
+        },
+        "status_code": 201
+      }
+    ],
+    "authentication": {
+      "type": "Bearer JWT",
+      "header": "Authorization",
+      "format": "Bearer <access_token>"
+    },
+    "security": {
+      "rate_limiting": "100 requests per minute per IP",
+      "cors": "Configured for Flutter app origin",
+      "password_hashing": "bcrypt",
+      "rls": "Row Level Security on PostgreSQL for user isolation",
+      "jwt_expiration": "24 hours (access token), 30 days (refresh token)"
+    },
+    "error_responses": {
+      "400": "Bad Request - Validation error",
+      "401": "Unauthorized - Missing or invalid JWT",
+      "403": "Forbidden - User not authorized for resource",
+      "404": "Not Found - Resource doesn't exist",
+      "409": "Conflict - Resource already exists",
+      "429": "Too Many Requests - Rate limit exceeded",
+      "500": "Internal Server Error"
+    }
+  }
+}
