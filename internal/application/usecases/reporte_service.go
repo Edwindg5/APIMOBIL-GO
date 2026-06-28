@@ -60,12 +60,11 @@ func (s *ReporteService) RequestReporte(ctx context.Context, loteID, usuarioID i
 		Estado:    "pendiente",
 	}
 
-	reporteID, err := s.reporteRepository.Create(ctx, reporte)
-	if err != nil {
+	if err := s.reporteRepository.Create(ctx, reporte); err != nil {
 		return 0, fmt.Errorf("error creating reporte: %w", err)
 	}
 
 	// TODO: Enviar evento a api-web o cola de mensajes para procesar
 
-	return reporteID, nil
+	return reporte.ID, nil
 }

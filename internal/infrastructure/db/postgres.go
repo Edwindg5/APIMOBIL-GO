@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -48,7 +49,7 @@ func (db *PostgresDB) Query(ctx context.Context, userID int, sql string, args ..
 }
 
 // Exec ejecuta una query sin retornar filas
-func (db *PostgresDB) Exec(ctx context.Context, userID int, sql string, args ...any) (pgx.CommandTag, error) {
+func (db *PostgresDB) Exec(ctx context.Context, userID int, sql string, args ...any) (pgconn.CommandTag, error) {
 	return db.pool.Exec(ctx, db.injectUserID(userID, sql), args...)
 }
 

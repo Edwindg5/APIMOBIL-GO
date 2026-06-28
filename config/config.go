@@ -78,6 +78,9 @@ func Load() (*Config, error) {
 }
 
 func (c *Config) DBConnString() string {
+	if url := os.Getenv("DATABASE_URL"); url != "" {
+		return url
+	}
 	return fmt.Sprintf(
 		"postgres://%s:%s@%s:%d/%s?sslmode=%s",
 		c.DBUser,

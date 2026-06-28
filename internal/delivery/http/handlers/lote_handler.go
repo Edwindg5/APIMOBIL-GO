@@ -9,7 +9,6 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/kajve/api-mobile/internal/application/interfaces"
 	"github.com/kajve/api-mobile/internal/delivery/http/middleware"
-	"github.com/kajve/api-mobile/internal/domain/entities"
 )
 
 type LoteHandler struct {

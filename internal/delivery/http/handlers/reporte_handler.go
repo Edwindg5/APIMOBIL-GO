@@ -3,9 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
 	"github.com/kajve/api-mobile/internal/application/interfaces"
 	"github.com/kajve/api-mobile/internal/delivery/http/middleware"

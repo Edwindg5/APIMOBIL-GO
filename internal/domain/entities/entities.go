@@ -2,6 +2,8 @@ package entities
 
 import (
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 // Usuario representa un usuario del sistema
@@ -51,6 +53,7 @@ type RefreshTokenResponse struct {
 
 // JWTClaims son los claims del JWT
 type JWTClaims struct {
+	jwt.RegisteredClaims
 	UserID int    `json:"user_id"`
 	Email  string `json:"email"`
 	Rol    string `json:"rol"`
