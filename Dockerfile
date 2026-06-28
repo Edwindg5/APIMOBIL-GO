@@ -12,7 +12,7 @@ RUN go mod download
 COPY . .
 
 # Compilar aplicación
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o api-mobile ./cmd/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o api-mobile .
 
 # Imagen final
 FROM alpine:latest
