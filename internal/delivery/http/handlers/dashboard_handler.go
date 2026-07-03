@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/kajve/api-mobile/internal/application/interfaces"
@@ -26,6 +27,7 @@ func (h *DashboardHandler) GetDashboard(w http.ResponseWriter, r *http.Request) 
 
 	dashboard, err := h.dashboardService.GetDashboard(r.Context(), userID)
 	if err != nil {
+		log.Printf("dashboard error (user_id=%d): %v", userID, err)
 		http.Error(w, `{"error": "internal server error"}`, http.StatusInternalServerError)
 		return
 	}
