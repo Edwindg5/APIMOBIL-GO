@@ -72,7 +72,7 @@ func (s *DeviceService) LinkDevice(ctx context.Context, esp32ID, provisioningTok
 
 	evento := &entities.HistorialEvento{
 		LoteID:      created.ID,
-		Tipo:        "dispositivo_enlazado",
+		TipoEvento:  "dispositivo_enlazado",
 		Descripcion: fmt.Sprintf("Sensor %s enlazado al lote", esp32ID),
 	}
 	_ = s.historialRepo.Create(ctx, evento)

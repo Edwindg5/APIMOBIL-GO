@@ -18,19 +18,19 @@ func NewAlertaRepository(db *PostgresDB) interfaces.AlertaRepository {
 	return &AlertaRepository{db: db}
 }
 
-const alertaCols = `id, lote_id, tipo, mensaje, nivel, atendida, fecha_atencion, created_at, updated_at`
+const alertaCols = `id_alerta, id_lote, id_sensor, tipo_alerta, mensaje, nivel_severidad, atendida, fecha_atencion, fecha_generada`
 
 func scanAlertaRow(row interface{ Scan(...any) error }, a *entities.Alerta) error {
 	return row.Scan(
-		&a.ID, &a.LoteID, &a.Tipo, &a.Mensaje, &a.Nivel,
-		&a.Atendida, &a.FechaAtencion, &a.CreatedAt, &a.UpdatedAt,
+		&a.ID, &a.LoteID, &a.SensorID, &a.TipoAlerta, &a.Mensaje, &a.NivelSeveridad,
+		&a.Atendida, &a.FechaAtencion, &a.FechaGenerada,
 	)
 }
 
 func (r *AlertaRepository) GetByID(ctx context.Context, id int) (*entities.Alerta, error) {
 	a := &entities.Alerta{}
 	err := scanAlertaRow(
-		r.db.GetPool().QueryRow(ctx, `SELECT `+alertaCols+` FROM alertas WHERE id = $1`, id), a,
+		r.db.GetPool().QueryRow(ctx, `SELECT `+alertaCols+` FROM alertas WHERE id_alerta = $1`, id), a,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -49,10 +49,10 @@ func (r *AlertaRepository) GetByLoteIDFiltered(ctx context.Context, loteID int, 
 	rows, err := r.db.GetPool().Query(ctx, `
 		SELECT `+alertaCols+`
 		FROM alertas
-		WHERE lote_id = $1
+		WHERE id_lote = $1
 		  AND ($2::boolean IS NULL OR atendida = $2)
-		  AND ($3 = '' OR nivel = $3)
-		ORDER BY created_at DESC
+		  AND ($3 = '' OR nivel_severidad = $3)
+		ORDER BY fecha_generada DESC
 	`, loteID, atendida, nivel)
 	if err != nil {
 		return nil, err
@@ -75,8 +75,8 @@ func (r *AlertaRepository) MarcarAtendida(ctx context.Context, alertaID int) (*e
 	a := &entities.Alerta{}
 	err := scanAlertaRow(r.db.GetPool().QueryRow(ctx, `
 		UPDATE alertas
-		SET atendida = true, fecha_atencion = $1, updated_at = NOW()
-		WHERE id = $2
+		SET atendida = true, fecha_atencion = $1
+		WHERE id_alerta = $2
 		RETURNING `+alertaCols, now, alertaID), a)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -89,9 +89,9 @@ func (r *AlertaRepository) MarcarAtendida(ctx context.Context, alertaID int) (*e
 
 func (r *AlertaRepository) Create(ctx context.Context, alerta *entities.Alerta) error {
 	return r.db.GetPool().QueryRow(ctx, `
-		INSERT INTO alertas (lote_id, tipo, mensaje, nivel, atendida, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, false, NOW(), NOW())
-		RETURNING id, created_at, updated_at
-	`, alerta.LoteID, alerta.Tipo, alerta.Mensaje, alerta.Nivel,
-	).Scan(&alerta.ID, &alerta.CreatedAt, &alerta.UpdatedAt)
+		INSERT INTO alertas (id_lote, id_sensor, tipo_alerta, mensaje, nivel_severidad, atendida, fecha_generada)
+		VALUES ($1, $2, $3, $4, $5, false, NOW())
+		RETURNING id_alerta, fecha_generada
+	`, alerta.LoteID, alerta.SensorID, alerta.TipoAlerta, alerta.Mensaje, alerta.NivelSeveridad,
+	).Scan(&alerta.ID, &alerta.FechaGenerada)
 }

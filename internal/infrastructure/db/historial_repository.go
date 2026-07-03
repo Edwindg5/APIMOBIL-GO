@@ -23,7 +23,7 @@ func (r *HistorialRepository) GetByLoteID(ctx context.Context, loteID int) ([]en
 func (r *HistorialRepository) GetByLoteIDPaginated(ctx context.Context, loteID int, limit, offset int) ([]entities.HistorialEvento, int, error) {
 	var total int
 	if err := r.db.GetPool().QueryRow(ctx,
-		`SELECT COUNT(*) FROM historial_eventos WHERE lote_id = $1`, loteID,
+		`SELECT COUNT(*) FROM historial_eventos WHERE id_lote = $1`, loteID,
 	).Scan(&total); err != nil {
 		return nil, 0, err
 	}
@@ -38,18 +38,18 @@ func (r *HistorialRepository) GetByLoteIDPaginated(ctx context.Context, loteID i
 
 	if limit > 0 {
 		rows, err = r.db.GetPool().Query(ctx, `
-			SELECT id, lote_id, tipo, descripcion, created_at
+			SELECT id_evento, id_lote, id_usuario, tipo_evento, descripcion, fecha_evento
 			FROM historial_eventos
-			WHERE lote_id = $1
-			ORDER BY created_at DESC
+			WHERE id_lote = $1
+			ORDER BY fecha_evento DESC
 			LIMIT $2 OFFSET $3
 		`, loteID, limit, offset)
 	} else {
 		rows, err = r.db.GetPool().Query(ctx, `
-			SELECT id, lote_id, tipo, descripcion, created_at
+			SELECT id_evento, id_lote, id_usuario, tipo_evento, descripcion, fecha_evento
 			FROM historial_eventos
-			WHERE lote_id = $1
-			ORDER BY created_at DESC
+			WHERE id_lote = $1
+			ORDER BY fecha_evento DESC
 		`, loteID)
 	}
 	if err != nil {
@@ -60,7 +60,7 @@ func (r *HistorialRepository) GetByLoteIDPaginated(ctx context.Context, loteID i
 	var eventos []entities.HistorialEvento
 	for rows.Next() {
 		var e entities.HistorialEvento
-		if err := rows.Scan(&e.ID, &e.LoteID, &e.Tipo, &e.Descripcion, &e.CreatedAt); err != nil {
+		if err := rows.Scan(&e.ID, &e.LoteID, &e.UsuarioID, &e.TipoEvento, &e.Descripcion, &e.FechaEvento); err != nil {
 			return nil, 0, err
 		}
 		eventos = append(eventos, e)
@@ -70,9 +70,9 @@ func (r *HistorialRepository) GetByLoteIDPaginated(ctx context.Context, loteID i
 
 func (r *HistorialRepository) Create(ctx context.Context, evento *entities.HistorialEvento) error {
 	return r.db.GetPool().QueryRow(ctx, `
-		INSERT INTO historial_eventos (lote_id, tipo, descripcion, created_at)
-		VALUES ($1, $2, $3, NOW())
-		RETURNING id, created_at
-	`, evento.LoteID, evento.Tipo, evento.Descripcion,
-	).Scan(&evento.ID, &evento.CreatedAt)
+		INSERT INTO historial_eventos (id_lote, id_usuario, tipo_evento, descripcion, fecha_evento)
+		VALUES ($1, $2, $3, $4, NOW())
+		RETURNING id_evento, fecha_evento
+	`, evento.LoteID, evento.UsuarioID, evento.TipoEvento, evento.Descripcion,
+	).Scan(&evento.ID, &evento.FechaEvento)
 }

@@ -78,7 +78,7 @@ func (s *DashboardService) GetDashboard(ctx context.Context, usuarioID int) (*en
 			if !a.Atendida {
 				resumen.AlertasActivas++
 				resp.AlertasSinAtender++
-				if a.Nivel == "critica" || a.Nivel == "critical" {
+				if a.NivelSeveridad == "critica" {
 					resp.AlertasCriticasActivas++
 				}
 			}

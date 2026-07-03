@@ -70,8 +70,8 @@ func (s *AlertaService) AtenderAlerta(ctx context.Context, alertaID, usuarioID i
 
 	evento := &entities.HistorialEvento{
 		LoteID:      alerta.LoteID,
-		Tipo:        "alerta_atendida",
-		Descripcion: fmt.Sprintf("Alerta '%s' marcada como atendida", alerta.Tipo),
+		TipoEvento:  "alerta_atendida",
+		Descripcion: fmt.Sprintf("Alerta '%s' marcada como atendida", alerta.TipoAlerta),
 	}
 	_ = s.historialRepo.Create(ctx, evento)
 

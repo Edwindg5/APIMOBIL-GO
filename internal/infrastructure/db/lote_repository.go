@@ -19,20 +19,24 @@ func NewLoteRepository(db *PostgresDB) interfaces.LoteRepository {
 	return &LoteRepository{db: db}
 }
 
-const loteColumns = `id, usuario_id, nombre_lote, variedad, tipo_proceso, peso_kg, ubicacion,
-	id_sensor, codigo_qr, estado, fecha_inicio_secado, fecha_fin_secado, created_at, updated_at`
+const loteColumns = `id_lote, id_usuario, nombre_lote, variedad, tipo_proceso, peso_kg, ubicacion,
+	id_sensor, codigo_qr, estado, fecha_inicio_secado, fecha_fin_secado, linked_at, created_at`
+
+func scanLote(row interface{ Scan(...any) error }, l *entities.LoteCafe) error {
+	return row.Scan(
+		&l.ID, &l.UsuarioID, &l.NombreLote, &l.Variedad, &l.TipoProceso,
+		&l.PesoKg, &l.Ubicacion, &l.IDSensor, &l.CodigoQR, &l.Estado,
+		&l.FechaInicioSecado, &l.FechaFinSecado, &l.LinkedAt, &l.CreatedAt,
+	)
+}
 
 // GetByID obtiene un lote por ID
 func (r *LoteRepository) GetByID(ctx context.Context, id int) (*entities.LoteCafe, error) {
 	lote := &entities.LoteCafe{}
-	err := r.db.GetPool().QueryRow(ctx, `
+	err := scanLote(r.db.GetPool().QueryRow(ctx, `
 		SELECT `+loteColumns+`
-		FROM lotes_cafe WHERE id = $1
-	`, id).Scan(
-		&lote.ID, &lote.UsuarioID, &lote.NombreLote, &lote.Variedad, &lote.TipoProceso,
-		&lote.PesoKg, &lote.Ubicacion, &lote.IDSensor, &lote.CodigoQR, &lote.Estado,
-		&lote.FechaInicioSecado, &lote.FechaFinSecado, &lote.CreatedAt, &lote.UpdatedAt,
-	)
+		FROM lotes_cafe WHERE id_lote = $1
+	`, id), lote)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
@@ -48,7 +52,7 @@ func (r *LoteRepository) GetByUsuarioID(ctx context.Context, usuarioID int, esta
 	var total int
 	err := r.db.GetPool().QueryRow(ctx, `
 		SELECT COUNT(*) FROM lotes_cafe
-		WHERE usuario_id = $1 AND (estado = $2 OR $2 = '')
+		WHERE id_usuario = $1 AND (estado = $2 OR $2 = '')
 	`, usuarioID, estado).Scan(&total)
 	if err != nil {
 		return nil, 0, err
@@ -68,7 +72,7 @@ func (r *LoteRepository) GetByUsuarioID(ctx context.Context, usuarioID int, esta
 		rows, queryErr = r.db.GetPool().Query(ctx, `
 			SELECT `+loteColumns+`
 			FROM lotes_cafe
-			WHERE usuario_id = $1 AND (estado = $2 OR $2 = '')
+			WHERE id_usuario = $1 AND (estado = $2 OR $2 = '')
 			ORDER BY created_at DESC
 			LIMIT $3 OFFSET $4
 		`, usuarioID, estado, limit, offset)
@@ -76,7 +80,7 @@ func (r *LoteRepository) GetByUsuarioID(ctx context.Context, usuarioID int, esta
 		rows, queryErr = r.db.GetPool().Query(ctx, `
 			SELECT `+loteColumns+`
 			FROM lotes_cafe
-			WHERE usuario_id = $1 AND (estado = $2 OR $2 = '')
+			WHERE id_usuario = $1 AND (estado = $2 OR $2 = '')
 			ORDER BY created_at DESC
 		`, usuarioID, estado)
 	}
@@ -88,11 +92,7 @@ func (r *LoteRepository) GetByUsuarioID(ctx context.Context, usuarioID int, esta
 	var lotes []entities.LoteCafe
 	for rows.Next() {
 		var l entities.LoteCafe
-		if err := rows.Scan(
-			&l.ID, &l.UsuarioID, &l.NombreLote, &l.Variedad, &l.TipoProceso,
-			&l.PesoKg, &l.Ubicacion, &l.IDSensor, &l.CodigoQR, &l.Estado,
-			&l.FechaInicioSecado, &l.FechaFinSecado, &l.CreatedAt, &l.UpdatedAt,
-		); err != nil {
+		if err := scanLote(rows, &l); err != nil {
 			return nil, 0, err
 		}
 		lotes = append(lotes, l)
@@ -112,19 +112,15 @@ func (r *LoteRepository) Create(ctx context.Context, lote *entities.LoteCafe) (*
 	defer tx.Rollback(ctx)
 
 	created := &entities.LoteCafe{}
-	err = tx.QueryRow(ctx, `
+	err = scanLote(tx.QueryRow(ctx, `
 		INSERT INTO lotes_cafe
-			(usuario_id, nombre_lote, variedad, tipo_proceso, peso_kg, ubicacion,
-			 id_sensor, codigo_qr, estado, fecha_inicio_secado, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, gen_random_uuid()::text, $8, NOW(), NOW(), NOW())
+			(id_usuario, nombre_lote, variedad, tipo_proceso, peso_kg, ubicacion,
+			 id_sensor, codigo_qr, estado, fecha_inicio_secado, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, gen_random_uuid()::text, $8, NOW(), NOW())
 		RETURNING `+loteColumns,
 		lote.UsuarioID, lote.NombreLote, lote.Variedad, lote.TipoProceso,
 		lote.PesoKg, lote.Ubicacion, lote.IDSensor, lote.Estado,
-	).Scan(
-		&created.ID, &created.UsuarioID, &created.NombreLote, &created.Variedad, &created.TipoProceso,
-		&created.PesoKg, &created.Ubicacion, &created.IDSensor, &created.CodigoQR, &created.Estado,
-		&created.FechaInicioSecado, &created.FechaFinSecado, &created.CreatedAt, &created.UpdatedAt,
-	)
+	), created)
 	if err != nil {
 		return nil, err
 	}
@@ -143,17 +139,13 @@ func (r *LoteRepository) Update(ctx context.Context, loteID, usuarioID int, nomb
 	defer tx.Rollback(ctx)
 
 	lote := &entities.LoteCafe{}
-	err = tx.QueryRow(ctx, `
+	err = scanLote(tx.QueryRow(ctx, `
 		UPDATE lotes_cafe
-		SET nombre_lote = $1, variedad = $2, peso_kg = $3, ubicacion = $4, updated_at = NOW()
-		WHERE id = $5 AND usuario_id = $6 AND estado = 'en_proceso'
+		SET nombre_lote = $1, variedad = $2, peso_kg = $3, ubicacion = $4
+		WHERE id_lote = $5 AND id_usuario = $6 AND estado = 'en_proceso'
 		RETURNING `+loteColumns,
 		nombre, variedad, pesoKg, ubicacion, loteID, usuarioID,
-	).Scan(
-		&lote.ID, &lote.UsuarioID, &lote.NombreLote, &lote.Variedad, &lote.TipoProceso,
-		&lote.PesoKg, &lote.Ubicacion, &lote.IDSensor, &lote.CodigoQR, &lote.Estado,
-		&lote.FechaInicioSecado, &lote.FechaFinSecado, &lote.CreatedAt, &lote.UpdatedAt,
-	)
+	), lote)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
@@ -175,17 +167,13 @@ func (r *LoteRepository) UpdateEstado(ctx context.Context, loteID, usuarioID int
 	defer tx.Rollback(ctx)
 
 	lote := &entities.LoteCafe{}
-	err = tx.QueryRow(ctx, `
+	err = scanLote(tx.QueryRow(ctx, `
 		UPDATE lotes_cafe
-		SET estado = $1, fecha_fin_secado = $2, updated_at = NOW()
-		WHERE id = $3 AND usuario_id = $4 AND estado = 'en_proceso'
+		SET estado = $1, fecha_fin_secado = $2
+		WHERE id_lote = $3 AND id_usuario = $4 AND estado = 'en_proceso'
 		RETURNING `+loteColumns,
 		estado, fechaFin, loteID, usuarioID,
-	).Scan(
-		&lote.ID, &lote.UsuarioID, &lote.NombreLote, &lote.Variedad, &lote.TipoProceso,
-		&lote.PesoKg, &lote.Ubicacion, &lote.IDSensor, &lote.CodigoQR, &lote.Estado,
-		&lote.FechaInicioSecado, &lote.FechaFinSecado, &lote.CreatedAt, &lote.UpdatedAt,
-	)
+	), lote)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil

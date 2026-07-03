@@ -8,15 +8,14 @@ import (
 
 // Usuario representa un usuario del sistema
 type Usuario struct {
-	ID             int       `db:"id"`
-	Email          string    `db:"email"`
-	Password       string    `db:"password"`
-	NombreCompleto string    `db:"nombre_completo"`
-	Telefono       *string   `db:"telefono"`
-	Rol            string    `db:"rol"`
-	Estado         string    `db:"estado"`
-	CreatedAt      time.Time `db:"created_at"`
-	UpdatedAt      time.Time `db:"updated_at"`
+	ID            int       `db:"id_usuario"`
+	Nombre        string    `db:"nombre"`
+	Email         string    `db:"email"`
+	PasswordHash  string    `db:"password_hash"`
+	Rol           string    `db:"rol"` // 'administrador', 'productor'
+	Telefono      *string   `db:"telefono"`
+	Estado        string    `db:"estado"` // 'activo', 'inactivo'
+	FechaRegistro time.Time `db:"fecha_registro"`
 }
 
 // RegisterRequest es la solicitud de registro de nuevo usuario
@@ -67,9 +66,9 @@ type LoginRequest struct {
 
 // LoginResponse es la respuesta de login
 type LoginResponse struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-	ExpiresIn    int64  `json:"expires_in"` // segundos
+	AccessToken  string            `json:"access_token"`
+	RefreshToken string            `json:"refresh_token"`
+	ExpiresIn    int64             `json:"expires_in"` // segundos
 	Usuario      UsuarioPublicInfo `json:"usuario"`
 }
 
@@ -100,18 +99,9 @@ type JWTClaims struct {
 	Rol    string `json:"rol"`
 }
 
-// ProvisioningToken representa un token de provisioning de un solo uso
-type ProvisioningToken struct {
-	ID        int       `db:"id"`
-	ESP32ID   string    `db:"esp32_id"`
-	Token     string    `db:"token"` // hash del token original
-	UsuarioID int       `db:"usuario_id"`
-	UsedAt    *time.Time `db:"used_at"`
-	ExpiresAt time.Time `db:"expires_at"`
-	CreatedAt time.Time `db:"created_at"`
-}
-
-// LinkDeviceRequest es la solicitud para vincular un dispositivo vía QR
+// LinkDeviceRequest es la solicitud para vincular un dispositivo vía QR.
+// El campo ESP32ID se conserva por compatibilidad con el contrato de la app móvil;
+// su valor se usa para buscar el sensor por mac_address (no existe esp32_id en la BD real).
 type LinkDeviceRequest struct {
 	ESP32ID           string `json:"esp32_id" validate:"required"`
 	ProvisioningToken string `json:"provisioning_token" validate:"required"`
@@ -123,25 +113,24 @@ type LinkDeviceResponse struct {
 	Message string    `json:"message"`
 }
 
-// Sensor representa un ESP32
+// Sensor representa un sensor físico (ESP32)
 type Sensor struct {
-	ID                int        `db:"id"`
-	ESP32ID           string     `db:"esp32_id"`
-	MacAddress        *string    `db:"mac_address"`
-	LoteID            *int       `db:"lote_id"`
+	ID                int        `db:"id_sensor"`
+	MacAddress        string     `db:"mac_address"`
+	IDColaMQTT        string     `db:"id_cola_mqtt"`
 	ProvisioningToken *string    `db:"provisioning_token"`
 	TokenUsado        bool       `db:"token_usado"`
-	LinkedAt          *time.Time `db:"linked_at"`
-	LastSeen          *time.Time `db:"last_seen"`
-	Estado            string     `db:"estado"`
-	CreatedAt         time.Time  `db:"created_at"`
-	UpdatedAt         time.Time  `db:"updated_at"`
+	Tipo              string     `db:"tipo"` // 'temperatura', 'humedad', 'ambos'
+	Modelo            *string    `db:"modelo"`
+	Estado            string     `db:"estado"` // 'activo', 'inactivo', 'mantenimiento'
+	FechaRegistro     time.Time  `db:"fecha_registro"`
+	UltimaConexion    *time.Time `db:"ultima_conexion"`
 }
 
 // LoteCafe representa un lote de secado de café
 type LoteCafe struct {
-	ID                int        `db:"id" json:"id"`
-	UsuarioID         int        `db:"usuario_id" json:"usuario_id"`
+	ID                int        `db:"id_lote" json:"id"`
+	UsuarioID         int        `db:"id_usuario" json:"usuario_id"`
 	NombreLote        string     `db:"nombre_lote" json:"nombre_lote"`
 	Variedad          string     `db:"variedad" json:"variedad"`
 	TipoProceso       string     `db:"tipo_proceso" json:"tipo_proceso"`
@@ -152,8 +141,8 @@ type LoteCafe struct {
 	Estado            string     `db:"estado" json:"estado"` // 'en_proceso', 'finalizado', 'cancelado'
 	FechaInicioSecado time.Time  `db:"fecha_inicio_secado" json:"fecha_inicio_secado"`
 	FechaFinSecado    *time.Time `db:"fecha_fin_secado" json:"fecha_fin_secado"`
+	LinkedAt          *time.Time `db:"linked_at" json:"linked_at"`
 	CreatedAt         time.Time  `db:"created_at" json:"created_at"`
-	UpdatedAt         time.Time  `db:"updated_at" json:"updated_at"`
 }
 
 // LoteListItem es un item en la lista paginada de lotes
@@ -183,10 +172,10 @@ type LoteDetalle struct {
 
 // LotesListResponse es la respuesta paginada de lotes
 type LotesListResponse struct {
-	Data   []LoteListItem `json:"data"`
-	Total  int            `json:"total"`
-	Page   int            `json:"page"`
-	Limit  int            `json:"limit"`
+	Data  []LoteListItem `json:"data"`
+	Total int            `json:"total"`
+	Page  int            `json:"page"`
+	Limit int            `json:"limit"`
 }
 
 // CreateLoteRequest es la solicitud de creación de un lote
@@ -209,13 +198,12 @@ type UpdateLoteRequest struct {
 
 // LecturaAmbiental representa una lectura ambiental de sensor
 type LecturaAmbiental struct {
-	ID          int       `db:"id" json:"id_lectura"`
-	LoteID      int       `db:"lote_id" json:"lote_id"`
-	SensorID    int       `db:"sensor_id" json:"sensor_id"`
+	ID          int       `db:"id_lectura" json:"id_lectura"`
+	SensorID    int       `db:"id_sensor" json:"sensor_id"`
+	LoteID      int       `db:"id_lote" json:"lote_id"`
 	Temperatura float64   `db:"temperatura" json:"temperatura"`
 	Humedad     float64   `db:"humedad" json:"humedad"`
-	Presion     float64   `db:"presion" json:"presion"`
-	CreatedAt   time.Time `db:"created_at" json:"timestamp"`
+	Timestamp   time.Time `db:"timestamp" json:"timestamp"`
 }
 
 // EstadisticasLote estadísticas resumidas de un lote
@@ -236,32 +224,32 @@ type EstadisticasLote struct {
 
 // Alerta representa una alerta del sistema para un lote
 type Alerta struct {
-	ID            int        `db:"id" json:"id_alerta"`
-	LoteID        int        `db:"lote_id" json:"lote_id"`
-	Tipo          string     `db:"tipo" json:"tipo_alerta"`
-	Mensaje       string     `db:"mensaje" json:"mensaje"`
-	Nivel         string     `db:"nivel" json:"nivel_severidad"`
-	Atendida      bool       `db:"atendida" json:"atendida"`
-	FechaAtencion *time.Time `db:"fecha_atencion" json:"fecha_atencion"`
-	CreatedAt     time.Time  `db:"created_at" json:"fecha_generada"`
-	UpdatedAt     time.Time  `db:"updated_at" json:"-"`
+	ID             int        `db:"id_alerta" json:"id_alerta"`
+	LoteID         int        `db:"id_lote" json:"lote_id"`
+	SensorID       *int       `db:"id_sensor" json:"sensor_id"`
+	TipoAlerta     string     `db:"tipo_alerta" json:"tipo_alerta"`
+	Mensaje        string     `db:"mensaje" json:"mensaje"`
+	NivelSeveridad string     `db:"nivel_severidad" json:"nivel_severidad"` // 'baja', 'media', 'alta', 'critica'
+	Atendida       bool       `db:"atendida" json:"atendida"`
+	FechaAtencion  *time.Time `db:"fecha_atencion" json:"fecha_atencion"`
+	FechaGenerada  time.Time  `db:"fecha_generada" json:"fecha_generada"`
 }
 
 // Prediccion representa una predicción del ml-service
 type Prediccion struct {
-	ID                  int       `db:"id" json:"id_prediccion"`
-	LoteID              int       `db:"lote_id" json:"lote_id"`
+	ID                  int       `db:"id_prediccion" json:"id_prediccion"`
+	LoteID              int       `db:"id_lote" json:"lote_id"`
+	IDModelo            int       `db:"id_modelo" json:"id_modelo"`
 	TiempoEstimadoHoras float64   `db:"tiempo_estimado_horas" json:"tiempo_estimado_horas"`
 	CalidadEstimada     string    `db:"calidad_estimada" json:"calidad_estimada"`
 	Confianza           float64   `db:"confianza" json:"confianza"`
 	FechaPrediccion     time.Time `db:"fecha_prediccion" json:"fecha_prediccion"`
-	ModeloVersion       string    `db:"modelo_version" json:"modelo_version"`
 }
 
 // Recomendacion representa una recomendación para un lote
 type Recomendacion struct {
-	ID            int       `db:"id" json:"id_recomendacion"`
-	LoteID        int       `db:"lote_id" json:"lote_id"`
+	ID            int       `db:"id_recomendacion" json:"id_recomendacion"`
+	LoteID        int       `db:"id_lote" json:"lote_id"`
 	Texto         string    `db:"texto" json:"texto"`
 	Origen        string    `db:"origen" json:"origen"`
 	FechaGenerada time.Time `db:"fecha_generada" json:"fecha_generada"`
@@ -269,24 +257,24 @@ type Recomendacion struct {
 
 // HistorialEvento representa un evento en el historial de un lote
 type HistorialEvento struct {
-	ID          int       `db:"id" json:"id_evento"`
-	LoteID      int       `db:"lote_id" json:"lote_id"`
-	Tipo        string    `db:"tipo" json:"tipo_evento"`
+	ID          int       `db:"id_evento" json:"id_evento"`
+	LoteID      int       `db:"id_lote" json:"lote_id"`
+	UsuarioID   *int      `db:"id_usuario" json:"usuario_id"`
+	TipoEvento  string    `db:"tipo_evento" json:"tipo_evento"`
 	Descripcion string    `db:"descripcion" json:"descripcion"`
-	CreatedAt   time.Time `db:"created_at" json:"fecha_evento"`
+	FechaEvento time.Time `db:"fecha_evento" json:"fecha_evento"`
 }
 
-// Reporte representa un reporte solicitado
+// Reporte representa un reporte solicitado.
+// La tabla real "reportes" no tiene columna "estado": la generación es fire-and-forget.
 type Reporte struct {
-	ID          int       `db:"id" json:"id"`
-	LoteID      int       `db:"lote_id" json:"id_lote"`
-	UsuarioID   int       `db:"usuario_id" json:"id_usuario"`
-	TipoReporte string    `db:"tipo_reporte" json:"tipo_reporte"`
-	Formato     string    `db:"formato" json:"formato"`
-	Estado      string    `db:"estado" json:"estado"`
-	URLArchivo  *string   `db:"url_archivo" json:"url_archivo"`
-	CreatedAt   time.Time `db:"created_at" json:"fecha_generacion"`
-	UpdatedAt   time.Time `db:"updated_at" json:"-"`
+	ID              int       `db:"id_reporte" json:"id"`
+	LoteID          int       `db:"id_lote" json:"id_lote"`
+	UsuarioID       int       `db:"id_usuario" json:"id_usuario"`
+	TipoReporte     string    `db:"tipo_reporte" json:"tipo_reporte"`
+	Formato         string    `db:"formato" json:"formato"` // 'pdf', 'excel'
+	URLArchivo      *string   `db:"url_archivo" json:"url_archivo"`
+	FechaGeneracion time.Time `db:"fecha_generacion" json:"fecha_generacion"`
 }
 
 // SolicitudReporteRequest solicitud de generación de reporte

@@ -27,13 +27,6 @@ type LoteRepository interface {
 	UpdateEstado(ctx context.Context, loteID, usuarioID int, estado string, fechaFin *time.Time) (*entities.LoteCafe, error)
 }
 
-// ProvisioningTokenRepository define las operaciones para tokens de provisioning (legacy)
-type ProvisioningTokenRepository interface {
-	Create(ctx context.Context, token *entities.ProvisioningToken) error
-	GetByToken(ctx context.Context, tokenHash string) (*entities.ProvisioningToken, error)
-	MarkAsUsed(ctx context.Context, tokenID int) error
-}
-
 // SensorRepository define las operaciones para sensores
 type SensorRepository interface {
 	GetByESP32ID(ctx context.Context, esp32ID string) (*entities.Sensor, error)
@@ -88,5 +81,6 @@ type ReporteRepository interface {
 	GetByID(ctx context.Context, id int) (*entities.Reporte, error)
 	GetByUsuarioID(ctx context.Context, usuarioID int) ([]entities.Reporte, error)
 	Create(ctx context.Context, reporte *entities.Reporte) error
-	Update(ctx context.Context, reporte *entities.Reporte) error
+	// UpdateURLArchivo actualiza la url del archivo generado (reportes no tiene columna "estado")
+	UpdateURLArchivo(ctx context.Context, id int, urlArchivo string) error
 }

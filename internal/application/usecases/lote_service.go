@@ -165,7 +165,7 @@ func (s *LoteService) FinalizarLote(ctx context.Context, loteID, usuarioID int) 
 
 	evento := &entities.HistorialEvento{
 		LoteID:      loteID,
-		Tipo:        "lote_finalizado",
+		TipoEvento:  "lote_finalizado",
 		Descripcion: fmt.Sprintf("Secado del lote '%s' finalizado", lote.NombreLote),
 	}
 	// El error del historial no cancela la finalización

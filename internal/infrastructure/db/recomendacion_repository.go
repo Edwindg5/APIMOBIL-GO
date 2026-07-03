@@ -17,9 +17,9 @@ func NewRecomendacionRepository(db *PostgresDB) interfaces.RecomendacionReposito
 
 func (r *RecomendacionRepository) GetByLoteID(ctx context.Context, loteID int) ([]entities.Recomendacion, error) {
 	rows, err := r.db.GetPool().Query(ctx, `
-		SELECT id, lote_id, texto, origen, fecha_generada
+		SELECT id_recomendacion, id_lote, texto, origen, fecha_generada
 		FROM recomendaciones
-		WHERE lote_id = $1
+		WHERE id_lote = $1
 		ORDER BY fecha_generada DESC
 	`, loteID)
 	if err != nil {
@@ -40,9 +40,9 @@ func (r *RecomendacionRepository) GetByLoteID(ctx context.Context, loteID int) (
 
 func (r *RecomendacionRepository) Create(ctx context.Context, rec *entities.Recomendacion) error {
 	return r.db.GetPool().QueryRow(ctx, `
-		INSERT INTO recomendaciones (lote_id, texto, origen, fecha_generada)
+		INSERT INTO recomendaciones (id_lote, texto, origen, fecha_generada)
 		VALUES ($1, $2, $3, NOW())
-		RETURNING id, fecha_generada
+		RETURNING id_recomendacion, fecha_generada
 	`, rec.LoteID, rec.Texto, rec.Origen,
 	).Scan(&rec.ID, &rec.FechaGenerada)
 }

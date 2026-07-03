@@ -44,7 +44,7 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (*entit
 	}
 
 	// Validar contraseña
-	if err := bcrypt.CompareHashAndPassword([]byte(usuario.Password), []byte(password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(usuario.PasswordHash), []byte(password)); err != nil {
 		return nil, errors.New("invalid email or password")
 	}
 
@@ -61,7 +61,7 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (*entit
 		Usuario: entities.UsuarioPublicInfo{
 			ID:             usuario.ID,
 			Email:          usuario.Email,
-			NombreCompleto: usuario.NombreCompleto,
+			NombreCompleto: usuario.Nombre,
 			Rol:            usuario.Rol,
 		},
 	}, nil

@@ -23,19 +23,18 @@ func (r *UsuarioRepository) GetByEmail(ctx context.Context, email string) (*enti
 	usuario := &entities.Usuario{}
 
 	err := r.db.GetPool().QueryRow(ctx, `
-		SELECT id, email, password, nombre_completo, telefono, rol, estado, created_at, updated_at
+		SELECT id_usuario, nombre, email, password_hash, rol, telefono, estado, fecha_registro
 		FROM usuarios
 		WHERE email = $1 AND estado = 'activo'
 	`, email).Scan(
 		&usuario.ID,
+		&usuario.Nombre,
 		&usuario.Email,
-		&usuario.Password,
-		&usuario.NombreCompleto,
-		&usuario.Telefono,
+		&usuario.PasswordHash,
 		&usuario.Rol,
+		&usuario.Telefono,
 		&usuario.Estado,
-		&usuario.CreatedAt,
-		&usuario.UpdatedAt,
+		&usuario.FechaRegistro,
 	)
 
 	if err != nil {
@@ -53,19 +52,18 @@ func (r *UsuarioRepository) GetByID(ctx context.Context, id int) (*entities.Usua
 	usuario := &entities.Usuario{}
 
 	err := r.db.GetPool().QueryRow(ctx, `
-		SELECT id, email, password, nombre_completo, telefono, rol, estado, created_at, updated_at
+		SELECT id_usuario, nombre, email, password_hash, rol, telefono, estado, fecha_registro
 		FROM usuarios
-		WHERE id = $1
+		WHERE id_usuario = $1
 	`, id).Scan(
 		&usuario.ID,
+		&usuario.Nombre,
 		&usuario.Email,
-		&usuario.Password,
-		&usuario.NombreCompleto,
-		&usuario.Telefono,
+		&usuario.PasswordHash,
 		&usuario.Rol,
+		&usuario.Telefono,
 		&usuario.Estado,
-		&usuario.CreatedAt,
-		&usuario.UpdatedAt,
+		&usuario.FechaRegistro,
 	)
 
 	if err != nil {
@@ -90,13 +88,12 @@ func (r *UsuarioRepository) ExistsByEmail(ctx context.Context, email string) (bo
 // Create crea un nuevo usuario
 func (r *UsuarioRepository) Create(ctx context.Context, usuario *entities.Usuario) error {
 	err := r.db.GetPool().QueryRow(ctx, `
-		INSERT INTO usuarios (email, password, nombre_completo, telefono, rol, estado, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
-		RETURNING id, created_at, updated_at
-	`, usuario.Email, usuario.Password, usuario.NombreCompleto, usuario.Telefono, usuario.Rol, usuario.Estado).Scan(
+		INSERT INTO usuarios (nombre, email, password_hash, telefono, rol, estado, fecha_registro)
+		VALUES ($1, $2, $3, $4, $5, $6, NOW())
+		RETURNING id_usuario, fecha_registro
+	`, usuario.Nombre, usuario.Email, usuario.PasswordHash, usuario.Telefono, usuario.Rol, usuario.Estado).Scan(
 		&usuario.ID,
-		&usuario.CreatedAt,
-		&usuario.UpdatedAt,
+		&usuario.FechaRegistro,
 	)
 
 	return err
@@ -113,18 +110,17 @@ func (r *UsuarioRepository) Update(ctx context.Context, id int, nombre, telefono
 	usuario := &entities.Usuario{}
 	err = tx.QueryRow(ctx, `
 		UPDATE usuarios
-		SET nombre_completo = $1, telefono = $2, updated_at = NOW()
-		WHERE id = $3
-		RETURNING id, email, nombre_completo, telefono, rol, estado, created_at, updated_at
+		SET nombre = $1, telefono = $2
+		WHERE id_usuario = $3
+		RETURNING id_usuario, nombre, email, telefono, rol, estado, fecha_registro
 	`, nombre, telefono, id).Scan(
 		&usuario.ID,
+		&usuario.Nombre,
 		&usuario.Email,
-		&usuario.NombreCompleto,
 		&usuario.Telefono,
 		&usuario.Rol,
 		&usuario.Estado,
-		&usuario.CreatedAt,
-		&usuario.UpdatedAt,
+		&usuario.FechaRegistro,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -142,7 +138,7 @@ func (r *UsuarioRepository) Update(ctx context.Context, id int, nombre, telefono
 // UpdatePassword actualiza la contraseña hasheada del usuario con RLS
 func (r *UsuarioRepository) UpdatePassword(ctx context.Context, id int, hashedPassword string) error {
 	_, err := r.db.Exec(ctx, id, `
-		UPDATE usuarios SET password = $1, updated_at = NOW() WHERE id = $2
+		UPDATE usuarios SET password_hash = $1 WHERE id_usuario = $2
 	`, hashedPassword, id)
 	return err
 }

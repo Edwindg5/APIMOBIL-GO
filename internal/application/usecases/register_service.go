@@ -35,12 +35,12 @@ func (s *RegisterService) Register(ctx context.Context, nombre, email, password,
 
 	tel := telefono
 	usuario := &entities.Usuario{
-		Email:          email,
-		Password:       hashedPassword,
-		NombreCompleto: nombre,
-		Telefono:       &tel,
-		Rol:            "productor",
-		Estado:         "activo",
+		Email:        email,
+		PasswordHash: hashedPassword,
+		Nombre:       nombre,
+		Telefono:     &tel,
+		Rol:          "productor",
+		Estado:       "activo",
 	}
 
 	if err := s.usuarioRepository.Create(ctx, usuario); err != nil {
@@ -49,9 +49,9 @@ func (s *RegisterService) Register(ctx context.Context, nombre, email, password,
 
 	return &entities.RegisterResponse{
 		IDUsuario:     usuario.ID,
-		Nombre:        usuario.NombreCompleto,
+		Nombre:        usuario.Nombre,
 		Email:         usuario.Email,
 		Rol:           usuario.Rol,
-		FechaRegistro: usuario.CreatedAt,
+		FechaRegistro: usuario.FechaRegistro,
 	}, nil
 }

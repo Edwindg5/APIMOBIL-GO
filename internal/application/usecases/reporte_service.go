@@ -41,7 +41,6 @@ func (s *ReporteService) RequestReporte(ctx context.Context, req *entities.Solic
 		UsuarioID:   usuarioID,
 		TipoReporte: req.TipoReporte,
 		Formato:     req.Formato,
-		Estado:      "pendiente",
 	}
 
 	if err := s.reporteRepository.Create(ctx, reporte); err != nil {

@@ -55,7 +55,7 @@ func (s *ProfileService) ChangePassword(ctx context.Context, userID int, passwor
 		return errors.New("user not found")
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(usuario.Password), []byte(passwordActual)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(usuario.PasswordHash), []byte(passwordActual)); err != nil {
 		return errors.New("invalid current password")
 	}
 
@@ -74,11 +74,11 @@ func (s *ProfileService) ChangePassword(ctx context.Context, userID int, passwor
 func toPerfilResponse(u *entities.Usuario) *entities.PerfilResponse {
 	return &entities.PerfilResponse{
 		IDUsuario:     u.ID,
-		Nombre:        u.NombreCompleto,
+		Nombre:        u.Nombre,
 		Email:         u.Email,
 		Rol:           u.Rol,
 		Telefono:      u.Telefono,
 		Estado:        u.Estado,
-		FechaRegistro: u.CreatedAt,
+		FechaRegistro: u.FechaRegistro,
 	}
 }

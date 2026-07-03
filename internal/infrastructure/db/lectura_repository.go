@@ -16,10 +16,10 @@ func NewLecturaRepository(db *PostgresDB) interfaces.LecturaRepository {
 	return &LecturaRepository{db: db}
 }
 
-const lecturaCols = `id, lote_id, sensor_id, temperatura, humedad, presion, created_at`
+const lecturaCols = `id_lectura, id_lote, id_sensor, temperatura, humedad, timestamp`
 
 func scanLectura(rows interface{ Scan(...any) error }, l *entities.LecturaAmbiental) error {
-	return rows.Scan(&l.ID, &l.LoteID, &l.SensorID, &l.Temperatura, &l.Humedad, &l.Presion, &l.CreatedAt)
+	return rows.Scan(&l.ID, &l.LoteID, &l.SensorID, &l.Temperatura, &l.Humedad, &l.Timestamp)
 }
 
 func (r *LecturaRepository) GetLatestByLoteID(ctx context.Context, loteID int, limit int) ([]entities.LecturaAmbiental, error) {
@@ -46,16 +46,16 @@ func (r *LecturaRepository) GetByLoteIDFiltered(ctx context.Context, loteID int,
 		rows, err = r.db.GetPool().Query(ctx, `
 			SELECT `+lecturaCols+`
 			FROM lecturas_ambientales
-			WHERE lote_id = $1
-			ORDER BY created_at DESC
+			WHERE id_lote = $1
+			ORDER BY timestamp DESC
 			LIMIT $2
 		`, loteID, limit)
 	} else {
 		rows, err = r.db.GetPool().Query(ctx, `
 			SELECT `+lecturaCols+`
 			FROM lecturas_ambientales
-			WHERE lote_id = $1 AND created_at >= $2
-			ORDER BY created_at DESC
+			WHERE id_lote = $1 AND timestamp >= $2
+			ORDER BY timestamp DESC
 			LIMIT $3
 		`, loteID, desde, limit)
 	}
@@ -88,9 +88,9 @@ func (r *LecturaRepository) GetEstadisticas(ctx context.Context, loteID int) (*e
 			COALESCE(MIN(humedad), 0),
 			COALESCE(MAX(humedad), 0),
 			COUNT(*),
-			MAX(created_at)
+			MAX(timestamp)
 		FROM lecturas_ambientales
-		WHERE lote_id = $1
+		WHERE id_lote = $1
 	`, loteID).Scan(
 		&stats.TemperaturaPromedio, &stats.TemperaturaMin, &stats.TemperaturaMax,
 		&stats.HumedadPromedio, &stats.HumedadMin, &stats.HumedadMax,
@@ -104,10 +104,10 @@ func (r *LecturaRepository) GetEstadisticas(ctx context.Context, loteID int) (*e
 	err = r.db.GetPool().QueryRow(ctx, `
 		SELECT
 			COUNT(*),
-			SUM(CASE WHEN nivel = 'critica' OR nivel = 'critical' THEN 1 ELSE 0 END),
+			SUM(CASE WHEN nivel_severidad = 'critica' THEN 1 ELSE 0 END),
 			SUM(CASE WHEN NOT atendida THEN 1 ELSE 0 END)
 		FROM alertas
-		WHERE lote_id = $1
+		WHERE id_lote = $1
 	`, loteID).Scan(&stats.TotalAlertas, &stats.AlertasCriticas, &stats.AlertasSinAtender)
 	if err != nil {
 		return nil, err
@@ -116,7 +116,7 @@ func (r *LecturaRepository) GetEstadisticas(ctx context.Context, loteID int) (*e
 	// Días de secado desde fecha_inicio_secado
 	err = r.db.GetPool().QueryRow(ctx, `
 		SELECT GREATEST(0, EXTRACT(DAY FROM (NOW() - fecha_inicio_secado))::int)
-		FROM lotes_cafe WHERE id = $1
+		FROM lotes_cafe WHERE id_lote = $1
 	`, loteID).Scan(&stats.DiasSecado)
 	if err != nil {
 		stats.DiasSecado = 0
@@ -127,9 +127,9 @@ func (r *LecturaRepository) GetEstadisticas(ctx context.Context, loteID int) (*e
 
 func (r *LecturaRepository) Create(ctx context.Context, lectura *entities.LecturaAmbiental) error {
 	return r.db.GetPool().QueryRow(ctx, `
-		INSERT INTO lecturas_ambientales (lote_id, sensor_id, temperatura, humedad, presion, created_at)
-		VALUES ($1, $2, $3, $4, $5, NOW())
-		RETURNING id, created_at
-	`, lectura.LoteID, lectura.SensorID, lectura.Temperatura, lectura.Humedad, lectura.Presion,
-	).Scan(&lectura.ID, &lectura.CreatedAt)
+		INSERT INTO lecturas_ambientales (id_lote, id_sensor, temperatura, humedad, timestamp)
+		VALUES ($1, $2, $3, $4, NOW())
+		RETURNING id_lectura, timestamp
+	`, lectura.LoteID, lectura.SensorID, lectura.Temperatura, lectura.Humedad,
+	).Scan(&lectura.ID, &lectura.Timestamp)
 }
