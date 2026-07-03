@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -39,6 +40,7 @@ func (h *LoteHandler) GetLotes(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.loteService.GetLotes(r.Context(), userID, estado, page, limit)
 	if err != nil {
+		log.Printf("GetLotes error (user_id=%d): %v", userID, err)
 		http.Error(w, `{"error": "error fetching lotes"}`, http.StatusInternalServerError)
 		return
 	}
@@ -69,6 +71,7 @@ func (h *LoteHandler) GetLote(w http.ResponseWriter, r *http.Request) {
 		case "unauthorized":
 			http.Error(w, `{"error": "unauthorized"}`, http.StatusForbidden)
 		default:
+			log.Printf("GetLote error (lote_id=%d, user_id=%d): %v", loteID, userID, err)
 			http.Error(w, `{"error": "internal server error"}`, http.StatusInternalServerError)
 		}
 		return
@@ -99,6 +102,7 @@ func (h *LoteHandler) CreateLote(w http.ResponseWriter, r *http.Request) {
 
 	lote, err := h.loteService.CreateLote(r.Context(), &req, userID)
 	if err != nil {
+		log.Printf("CreateLote error (user_id=%d): %v", userID, err)
 		http.Error(w, `{"error": "internal server error"}`, http.StatusInternalServerError)
 		return
 	}
@@ -138,6 +142,7 @@ func (h *LoteHandler) UpdateLote(w http.ResponseWriter, r *http.Request) {
 		case "lote not found or not editable":
 			http.Error(w, `{"error": "lote not found or not in process"}`, http.StatusNotFound)
 		default:
+			log.Printf("UpdateLote error (lote_id=%d, user_id=%d): %v", loteID, userID, err)
 			http.Error(w, `{"error": "internal server error"}`, http.StatusInternalServerError)
 		}
 		return
@@ -167,6 +172,7 @@ func (h *LoteHandler) FinalizarLote(w http.ResponseWriter, r *http.Request) {
 		case "lote not found or not in process":
 			http.Error(w, `{"error": "lote not found or not in process"}`, http.StatusNotFound)
 		default:
+			log.Printf("FinalizarLote error (lote_id=%d, user_id=%d): %v", loteID, userID, err)
 			http.Error(w, `{"error": "internal server error"}`, http.StatusInternalServerError)
 		}
 		return
@@ -195,6 +201,7 @@ func (h *LoteHandler) CancelarLote(w http.ResponseWriter, r *http.Request) {
 		case "lote not found or not in process":
 			http.Error(w, `{"error": "lote not found or not in process"}`, http.StatusNotFound)
 		default:
+			log.Printf("CancelarLote error (lote_id=%d, user_id=%d): %v", loteID, userID, err)
 			http.Error(w, `{"error": "internal server error"}`, http.StatusInternalServerError)
 		}
 		return
@@ -226,6 +233,7 @@ func (h *LoteHandler) GetQR(w http.ResponseWriter, r *http.Request) {
 		case "unauthorized":
 			http.Error(w, `{"error": "unauthorized"}`, http.StatusForbidden)
 		default:
+			log.Printf("GetQR error (lote_id=%d, user_id=%d): %v", loteID, userID, err)
 			http.Error(w, `{"error": "internal server error"}`, http.StatusInternalServerError)
 		}
 		return
