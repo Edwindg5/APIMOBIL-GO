@@ -51,7 +51,7 @@ func (r *AlertaRepository) GetByLoteIDFiltered(ctx context.Context, loteID int, 
 		FROM alertas
 		WHERE id_lote = $1
 		  AND ($2::boolean IS NULL OR atendida = $2)
-		  AND ($3 = '' OR nivel_severidad = $3)
+		  AND ($3 = '' OR nivel_severidad::text = $3)
 		ORDER BY fecha_generada DESC
 	`, loteID, atendida, nivel)
 	if err != nil {

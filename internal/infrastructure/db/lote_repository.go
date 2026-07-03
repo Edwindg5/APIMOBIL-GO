@@ -52,7 +52,7 @@ func (r *LoteRepository) GetByUsuarioID(ctx context.Context, usuarioID int, esta
 	var total int
 	err := r.db.GetPool().QueryRow(ctx, `
 		SELECT COUNT(*) FROM lotes_cafe
-		WHERE id_usuario = $1 AND (estado = $2 OR $2 = '')
+		WHERE id_usuario = $1 AND ($2 = '' OR estado::text = $2)
 	`, usuarioID, estado).Scan(&total)
 	if err != nil {
 		return nil, 0, err
@@ -72,7 +72,7 @@ func (r *LoteRepository) GetByUsuarioID(ctx context.Context, usuarioID int, esta
 		rows, queryErr = r.db.GetPool().Query(ctx, `
 			SELECT `+loteColumns+`
 			FROM lotes_cafe
-			WHERE id_usuario = $1 AND (estado = $2 OR $2 = '')
+			WHERE id_usuario = $1 AND ($2 = '' OR estado::text = $2)
 			ORDER BY created_at DESC
 			LIMIT $3 OFFSET $4
 		`, usuarioID, estado, limit, offset)
@@ -80,7 +80,7 @@ func (r *LoteRepository) GetByUsuarioID(ctx context.Context, usuarioID int, esta
 		rows, queryErr = r.db.GetPool().Query(ctx, `
 			SELECT `+loteColumns+`
 			FROM lotes_cafe
-			WHERE id_usuario = $1 AND (estado = $2 OR $2 = '')
+			WHERE id_usuario = $1 AND ($2 = '' OR estado::text = $2)
 			ORDER BY created_at DESC
 		`, usuarioID, estado)
 	}
