@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -42,6 +43,8 @@ func (h *PrediccionHandler) GetPredicciones(w http.ResponseWriter, r *http.Reque
 			statusCode = http.StatusForbidden
 		} else if err.Error() == "lote not found" {
 			statusCode = http.StatusNotFound
+		} else {
+			log.Printf("GetPredicciones error (lote_id=%d, user_id=%d): %v", loteID, userID, err)
 		}
 		http.Error(w, `{"error": "`+err.Error()+`"}`, statusCode)
 		return

@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
@@ -41,6 +42,9 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	response, err := h.authService.Login(r.Context(), req.Email, req.Password)
 	if err != nil {
+		if err.Error() != "invalid email or password" {
+			log.Printf("Login error (email=%s): %v", req.Email, err)
+		}
 		http.Error(w, `{"error": "invalid email or password"}`, http.StatusUnauthorized)
 		return
 	}
@@ -65,6 +69,7 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 
 	response, err := h.authService.RefreshAccessToken(r.Context(), req.RefreshToken)
 	if err != nil {
+		log.Printf("Refresh error: %v", err)
 		http.Error(w, `{"error": "invalid refresh token"}`, http.StatusUnauthorized)
 		return
 	}
@@ -93,6 +98,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, `{"error": "email already registered"}`, http.StatusConflict)
 			return
 		}
+		log.Printf("Register error (email=%s): %v", req.Email, err)
 		http.Error(w, `{"error": "internal server error"}`, http.StatusInternalServerError)
 		return
 	}

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -47,6 +48,7 @@ func (h *AlertaHandler) GetAlertas(w http.ResponseWriter, r *http.Request) {
 		case "unauthorized":
 			http.Error(w, `{"error": "unauthorized"}`, http.StatusForbidden)
 		default:
+			log.Printf("GetAlertas error (lote_id=%d, user_id=%d): %v", loteID, userID, err)
 			http.Error(w, `{"error": "internal server error"}`, http.StatusInternalServerError)
 		}
 		return
@@ -78,6 +80,7 @@ func (h *AlertaHandler) AtenderAlerta(w http.ResponseWriter, r *http.Request) {
 		case "unauthorized":
 			http.Error(w, `{"error": "unauthorized"}`, http.StatusForbidden)
 		default:
+			log.Printf("AtenderAlerta error (alerta_id=%d, user_id=%d): %v", alertaID, userID, err)
 			http.Error(w, `{"error": "internal server error"}`, http.StatusInternalServerError)
 		}
 		return

@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
@@ -34,6 +35,7 @@ func (h *ProfileHandler) GetPerfil(w http.ResponseWriter, r *http.Request) {
 
 	perfil, err := h.profileService.GetProfile(r.Context(), userID)
 	if err != nil {
+		log.Printf("GetPerfil error (user_id=%d): %v", userID, err)
 		http.Error(w, `{"error": "internal server error"}`, http.StatusInternalServerError)
 		return
 	}
@@ -63,6 +65,7 @@ func (h *ProfileHandler) UpdatePerfil(w http.ResponseWriter, r *http.Request) {
 
 	perfil, err := h.profileService.UpdateProfile(r.Context(), userID, req.Nombre, req.Telefono)
 	if err != nil {
+		log.Printf("UpdatePerfil error (user_id=%d): %v", userID, err)
 		http.Error(w, `{"error": "internal server error"}`, http.StatusInternalServerError)
 		return
 	}
@@ -96,6 +99,7 @@ func (h *ProfileHandler) ChangePassword(w http.ResponseWriter, r *http.Request) 
 			http.Error(w, `{"error": "contraseña actual incorrecta"}`, http.StatusUnauthorized)
 			return
 		}
+		log.Printf("ChangePassword error (user_id=%d): %v", userID, err)
 		http.Error(w, `{"error": "internal server error"}`, http.StatusInternalServerError)
 		return
 	}

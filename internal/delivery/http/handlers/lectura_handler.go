@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -55,6 +56,7 @@ func (h *LecturaHandler) GetLecturas(w http.ResponseWriter, r *http.Request) {
 		case "unauthorized":
 			http.Error(w, `{"error": "unauthorized"}`, http.StatusForbidden)
 		default:
+			log.Printf("lectura handler error (lote_id=%d, user_id=%d): %v", loteID, userID, err)
 			http.Error(w, `{"error": "internal server error"}`, http.StatusInternalServerError)
 		}
 		return
@@ -86,6 +88,7 @@ func (h *LecturaHandler) GetEstadisticas(w http.ResponseWriter, r *http.Request)
 		case "unauthorized":
 			http.Error(w, `{"error": "unauthorized"}`, http.StatusForbidden)
 		default:
+			log.Printf("lectura handler error (lote_id=%d, user_id=%d): %v", loteID, userID, err)
 			http.Error(w, `{"error": "internal server error"}`, http.StatusInternalServerError)
 		}
 		return

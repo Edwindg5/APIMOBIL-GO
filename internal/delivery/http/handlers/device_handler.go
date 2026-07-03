@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
@@ -50,6 +51,7 @@ func (h *DeviceHandler) LinkDevice(w http.ResponseWriter, r *http.Request) {
 		case "sensor not found":
 			http.Error(w, `{"error": "sensor not found"}`, http.StatusNotFound)
 		default:
+			log.Printf("LinkDevice error (user_id=%d): %v", userID, err)
 			http.Error(w, `{"error": "internal server error"}`, http.StatusInternalServerError)
 		}
 		return

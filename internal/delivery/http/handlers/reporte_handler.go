@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
@@ -48,6 +49,7 @@ func (h *ReporteHandler) RequestReporte(w http.ResponseWriter, r *http.Request) 
 		case "unauthorized":
 			http.Error(w, `{"error": "unauthorized"}`, http.StatusForbidden)
 		default:
+			log.Printf("RequestReporte error (user_id=%d): %v", userID, err)
 			http.Error(w, `{"error": "internal server error"}`, http.StatusInternalServerError)
 		}
 		return
@@ -67,6 +69,7 @@ func (h *ReporteHandler) GetReportes(w http.ResponseWriter, r *http.Request) {
 
 	reportes, err := h.reporteService.GetReportes(r.Context(), userID)
 	if err != nil {
+		log.Printf("GetReportes error (user_id=%d): %v", userID, err)
 		http.Error(w, `{"error": "internal server error"}`, http.StatusInternalServerError)
 		return
 	}

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -43,6 +44,7 @@ func (h *HistorialHandler) GetHistorial(w http.ResponseWriter, r *http.Request) 
 		case "unauthorized":
 			http.Error(w, `{"error": "unauthorized"}`, http.StatusForbidden)
 		default:
+			log.Printf("GetHistorial error (lote_id=%d, user_id=%d): %v", loteID, userID, err)
 			http.Error(w, `{"error": "internal server error"}`, http.StatusInternalServerError)
 		}
 		return

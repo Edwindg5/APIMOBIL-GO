@@ -281,7 +281,7 @@ type Reporte struct {
 type SolicitudReporteRequest struct {
 	IDLote      int    `json:"id_lote" validate:"required"`
 	TipoReporte string `json:"tipo_reporte" validate:"required"`
-	Formato     string `json:"formato" validate:"required,oneof=pdf csv"`
+	Formato     string `json:"formato" validate:"required,oneof=pdf excel"`
 }
 
 // DashboardLoteResumen resumen de un lote para el dashboard
