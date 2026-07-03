@@ -313,6 +313,8 @@ type DashboardResponse struct {
 	AlertasCriticasActivas    int                        `json:"alertas_criticas_activas"`
 	TemperaturaPromedioActual float64                    `json:"temperatura_promedio_actual"`
 	HumedadPromedioActual     float64                    `json:"humedad_promedio_actual"`
+	TotalReportes             int                        `json:"total_reportes"`
+	TotalSensores             int                        `json:"total_sensores"`
 	UltimaPrediccion          *UltimaPrediccionDashboard `json:"ultima_prediccion"`
 	LotesResumen              []DashboardLoteResumen     `json:"lotes_resumen"`
 }

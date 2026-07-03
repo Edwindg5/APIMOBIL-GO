@@ -36,6 +36,8 @@ type SensorRepository interface {
 	Create(ctx context.Context, sensor *entities.Sensor) (int, error)
 	LinkToLote(ctx context.Context, sensorID, loteID int) error
 	MarcarTokenUsado(ctx context.Context, sensorID int) error
+	// CountByUsuarioID cuenta sensores distintos vinculados a lotes del usuario (vía lotes_cafe.id_sensor)
+	CountByUsuarioID(ctx context.Context, usuarioID int) (int, error)
 }
 
 // LecturaRepository define las operaciones para lecturas ambientales

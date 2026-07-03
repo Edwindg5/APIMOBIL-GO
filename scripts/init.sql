@@ -1,168 +1,153 @@
--- Crear tablas del sistema
+-- Esquema real de la base de datos en Neon (PostgreSQL).
+-- Reescrito para coincidir exactamente con las columnas usadas por los repositorios en
+-- internal/infrastructure/db/*.go. El script anterior (id, password, esp32_id, lote_id en
+-- sensores, audit_log, provisioning_tokens, etc.) estaba obsoleto y no reflejaba la BD real.
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto"; -- gen_random_uuid()
 
 -- Tabla de usuarios
 CREATE TABLE IF NOT EXISTS usuarios (
-    id SERIAL PRIMARY KEY,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    nombre_completo VARCHAR(255),
-    rol VARCHAR(50) NOT NULL DEFAULT 'productor',
-    estado VARCHAR(50) NOT NULL DEFAULT 'activo',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    id_usuario     SERIAL PRIMARY KEY,
+    nombre         VARCHAR(150) NOT NULL,
+    email          VARCHAR(150) UNIQUE NOT NULL,
+    password_hash  VARCHAR(255) NOT NULL,
+    rol            VARCHAR(20) NOT NULL DEFAULT 'productor'
+                       CHECK (rol IN ('administrador', 'productor')),
+    telefono       VARCHAR(20),
+    estado         VARCHAR(20) NOT NULL DEFAULT 'activo'
+                       CHECK (estado IN ('activo', 'inactivo')),
+    fecha_registro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Tabla de sensores (ESP32)
 CREATE TABLE IF NOT EXISTS sensores (
-    id SERIAL PRIMARY KEY,
-    esp32_id VARCHAR(255) UNIQUE NOT NULL,
-    lote_id INTEGER,
-    linked_at TIMESTAMP,
-    last_seen TIMESTAMP,
-    estado VARCHAR(50) NOT NULL DEFAULT 'inactivo',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    id_sensor          SERIAL PRIMARY KEY,
+    mac_address        VARCHAR(50) UNIQUE NOT NULL,
+    id_cola_mqtt       VARCHAR(150) NOT NULL,
+    provisioning_token VARCHAR(255) UNIQUE,
+    token_usado        BOOLEAN NOT NULL DEFAULT FALSE,
+    tipo               VARCHAR(20) NOT NULL
+                           CHECK (tipo IN ('temperatura', 'humedad', 'ambos')),
+    modelo             VARCHAR(100),
+    estado             VARCHAR(20) NOT NULL DEFAULT 'inactivo'
+                           CHECK (estado IN ('activo', 'inactivo', 'mantenimiento')),
+    fecha_registro     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ultima_conexion    TIMESTAMP
 );
 
 -- Tabla de lotes de café
 CREATE TABLE IF NOT EXISTS lotes_cafe (
-    id SERIAL PRIMARY KEY,
-    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-    nombre VARCHAR(255) NOT NULL,
-    descripcion TEXT,
-    area DECIMAL(10, 2),
-    sensor_id INTEGER REFERENCES sensores(id),
-    estado VARCHAR(50) NOT NULL DEFAULT 'activo',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    id_lote             SERIAL PRIMARY KEY,
+    id_usuario          INTEGER NOT NULL REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+    id_sensor           INTEGER REFERENCES sensores(id_sensor),
+    nombre_lote         VARCHAR(100) NOT NULL,
+    variedad            VARCHAR(100),
+    peso_kg             NUMERIC(10, 2),
+    ubicacion           VARCHAR(200),
+    codigo_qr           VARCHAR(100) UNIQUE NOT NULL,
+    estado              VARCHAR(20) NOT NULL DEFAULT 'en_proceso'
+                            CHECK (estado IN ('en_proceso', 'finalizado', 'cancelado')),
+    fecha_inicio_secado TIMESTAMP,
+    fecha_fin_secado    TIMESTAMP,
+    linked_at           TIMESTAMP,
+    created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    tipo_proceso        VARCHAR(50)
 );
-
--- Agregar relación de lote_id a sensores después de crear lotes_cafe
-ALTER TABLE sensores ADD CONSTRAINT fk_sensores_lote 
-    FOREIGN KEY (lote_id) REFERENCES lotes_cafe(id) ON DELETE SET NULL;
 
 -- Tabla de lecturas ambientales
 CREATE TABLE IF NOT EXISTS lecturas_ambientales (
-    id SERIAL PRIMARY KEY,
-    lote_id INTEGER NOT NULL REFERENCES lotes_cafe(id) ON DELETE CASCADE,
-    sensor_id INTEGER NOT NULL REFERENCES sensores(id) ON DELETE CASCADE,
-    temperatura DECIMAL(5, 2),
-    humedad DECIMAL(5, 2),
-    presion DECIMAL(8, 2),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    id_lectura  BIGSERIAL PRIMARY KEY,
+    id_sensor   INTEGER NOT NULL REFERENCES sensores(id_sensor) ON DELETE CASCADE,
+    id_lote     INTEGER NOT NULL REFERENCES lotes_cafe(id_lote) ON DELETE CASCADE,
+    temperatura NUMERIC(5, 2),
+    humedad     NUMERIC(5, 2),
+    timestamp   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Tabla de alertas
 CREATE TABLE IF NOT EXISTS alertas (
-    id SERIAL PRIMARY KEY,
-    lote_id INTEGER NOT NULL REFERENCES lotes_cafe(id) ON DELETE CASCADE,
-    tipo VARCHAR(50) NOT NULL,
-    mensaje TEXT NOT NULL,
-    nivel VARCHAR(50) NOT NULL DEFAULT 'info',
-    leida BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    id_alerta       SERIAL PRIMARY KEY,
+    id_lote         INTEGER NOT NULL REFERENCES lotes_cafe(id_lote) ON DELETE CASCADE,
+    id_sensor       INTEGER REFERENCES sensores(id_sensor),
+    tipo_alerta     VARCHAR(100) NOT NULL,
+    mensaje         TEXT,
+    nivel_severidad VARCHAR(20) NOT NULL
+                        CHECK (nivel_severidad IN ('baja', 'media', 'alta', 'critica')),
+    atendida        BOOLEAN NOT NULL DEFAULT FALSE,
+    fecha_generada  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fecha_atencion  TIMESTAMP
 );
 
 -- Tabla de predicciones
+-- id_modelo referencia una tabla "modelos" fuera del alcance de este esquema; se deja sin FK.
 CREATE TABLE IF NOT EXISTS predicciones (
-    id SERIAL PRIMARY KEY,
-    lote_id INTEGER NOT NULL REFERENCES lotes_cafe(id) ON DELETE CASCADE,
-    prediccion TEXT NOT NULL,
-    probabilidad DECIMAL(5, 4),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    id_prediccion         SERIAL PRIMARY KEY,
+    id_lote               INTEGER NOT NULL REFERENCES lotes_cafe(id_lote) ON DELETE CASCADE,
+    id_modelo             INTEGER NOT NULL,
+    tiempo_estimado_horas NUMERIC(5, 2),
+    calidad_estimada      VARCHAR(50),
+    confianza             NUMERIC(5, 2),
+    fecha_prediccion      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Tabla de recomendaciones
 CREATE TABLE IF NOT EXISTS recomendaciones (
-    id SERIAL PRIMARY KEY,
-    lote_id INTEGER NOT NULL REFERENCES lotes_cafe(id) ON DELETE CASCADE,
-    accion VARCHAR(255) NOT NULL,
-    razon TEXT,
-    prioridad VARCHAR(50) NOT NULL DEFAULT 'media',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    id_recomendacion SERIAL PRIMARY KEY,
+    id_lote          INTEGER NOT NULL REFERENCES lotes_cafe(id_lote) ON DELETE CASCADE,
+    texto            TEXT NOT NULL,
+    origen           VARCHAR(50) NOT NULL DEFAULT 'modelo_nlp',
+    fecha_generada   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Tabla de historial de eventos
 CREATE TABLE IF NOT EXISTS historial_eventos (
-    id SERIAL PRIMARY KEY,
-    lote_id INTEGER NOT NULL REFERENCES lotes_cafe(id) ON DELETE CASCADE,
-    tipo VARCHAR(50) NOT NULL,
-    descripcion TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    id_evento    BIGSERIAL PRIMARY KEY,
+    id_lote      INTEGER NOT NULL REFERENCES lotes_cafe(id_lote) ON DELETE CASCADE,
+    id_usuario   INTEGER REFERENCES usuarios(id_usuario),
+    tipo_evento  VARCHAR(100) NOT NULL,
+    descripcion  TEXT,
+    fecha_evento TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Tabla de reportes
 CREATE TABLE IF NOT EXISTS reportes (
-    id SERIAL PRIMARY KEY,
-    lote_id INTEGER NOT NULL REFERENCES lotes_cafe(id) ON DELETE CASCADE,
-    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-    tipo VARCHAR(50) NOT NULL,
-    estado VARCHAR(50) NOT NULL DEFAULT 'pendiente',
-    url VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Tabla de audit log
-CREATE TABLE IF NOT EXISTS audit_log (
-    id SERIAL PRIMARY KEY,
-    usuario_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
-    accion VARCHAR(255) NOT NULL,
-    tabla VARCHAR(100),
-    registro_id INTEGER,
-    datos_anteriores JSONB,
-    datos_nuevos JSONB,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Tabla de provisioning tokens (para vincular dispositivos)
-CREATE TABLE IF NOT EXISTS provisioning_tokens (
-    id SERIAL PRIMARY KEY,
-    esp32_id VARCHAR(255) NOT NULL,
-    token VARCHAR(255) UNIQUE NOT NULL,
-    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-    used_at TIMESTAMP,
-    expires_at TIMESTAMP NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    id_reporte       SERIAL PRIMARY KEY,
+    id_lote          INTEGER REFERENCES lotes_cafe(id_lote),
+    id_usuario       INTEGER NOT NULL REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+    tipo_reporte     VARCHAR(100),
+    formato          VARCHAR(10) NOT NULL CHECK (formato IN ('pdf', 'excel')),
+    url_archivo      VARCHAR(255),
+    fecha_generacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Índices para optimización
-CREATE INDEX idx_usuarios_email ON usuarios(email);
-CREATE INDEX idx_usuarios_rol ON usuarios(rol);
-CREATE INDEX idx_lotes_cafe_usuario ON lotes_cafe(usuario_id);
-CREATE INDEX idx_lotes_cafe_sensor ON lotes_cafe(sensor_id);
-CREATE INDEX idx_sensores_esp32 ON sensores(esp32_id);
-CREATE INDEX idx_sensores_lote ON sensores(lote_id);
-CREATE INDEX idx_lecturas_lote ON lecturas_ambientales(lote_id);
-CREATE INDEX idx_lecturas_sensor ON lecturas_ambientales(sensor_id);
-CREATE INDEX idx_alertas_lote ON alertas(lote_id);
-CREATE INDEX idx_alertas_leida ON alertas(leida);
-CREATE INDEX idx_predicciones_lote ON predicciones(lote_id);
-CREATE INDEX idx_recomendaciones_lote ON recomendaciones(lote_id);
-CREATE INDEX idx_historial_lote ON historial_eventos(lote_id);
-CREATE INDEX idx_reportes_usuario ON reportes(usuario_id);
-CREATE INDEX idx_reportes_lote ON reportes(lote_id);
-CREATE INDEX idx_audit_usuario ON audit_log(usuario_id);
-CREATE INDEX idx_provisioning_tokens_usuario ON provisioning_tokens(usuario_id);
-CREATE INDEX idx_provisioning_tokens_esp32 ON provisioning_tokens(esp32_id);
+CREATE INDEX IF NOT EXISTS idx_usuarios_email ON usuarios(email);
+CREATE INDEX IF NOT EXISTS idx_usuarios_rol ON usuarios(rol);
+CREATE INDEX IF NOT EXISTS idx_sensores_mac_address ON sensores(mac_address);
+CREATE INDEX IF NOT EXISTS idx_lotes_cafe_usuario ON lotes_cafe(id_usuario);
+CREATE INDEX IF NOT EXISTS idx_lotes_cafe_sensor ON lotes_cafe(id_sensor);
+CREATE INDEX IF NOT EXISTS idx_lecturas_lote ON lecturas_ambientales(id_lote);
+CREATE INDEX IF NOT EXISTS idx_lecturas_sensor ON lecturas_ambientales(id_sensor);
+CREATE INDEX IF NOT EXISTS idx_alertas_lote ON alertas(id_lote);
+CREATE INDEX IF NOT EXISTS idx_alertas_atendida ON alertas(atendida);
+CREATE INDEX IF NOT EXISTS idx_predicciones_lote ON predicciones(id_lote);
+CREATE INDEX IF NOT EXISTS idx_recomendaciones_lote ON recomendaciones(id_lote);
+CREATE INDEX IF NOT EXISTS idx_historial_lote ON historial_eventos(id_lote);
+CREATE INDEX IF NOT EXISTS idx_reportes_usuario ON reportes(id_usuario);
+CREATE INDEX IF NOT EXISTS idx_reportes_lote ON reportes(id_lote);
 
--- Crear extensión para UUID si es necesario
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
--- RLS: Habilitar Row Level Security en PostgreSQL (ejemplo para lotes_cafe)
--- Esto se configura dependiendo de tu estrategia de RLS
+-- RLS: los repositorios usan SET app.current_user_id por transacción (ver postgres.go)
 ALTER TABLE lotes_cafe ENABLE ROW LEVEL SECURITY;
 
--- Policy de RLS: Usuarios solo pueden ver sus propios lotes
 CREATE POLICY lote_select_policy ON lotes_cafe FOR SELECT
-    USING (usuario_id = CAST(current_setting('app.current_user_id') AS INT));
+    USING (id_usuario = CAST(current_setting('app.current_user_id') AS INT));
 
 CREATE POLICY lote_insert_policy ON lotes_cafe FOR INSERT
-    WITH CHECK (usuario_id = CAST(current_setting('app.current_user_id') AS INT));
+    WITH CHECK (id_usuario = CAST(current_setting('app.current_user_id') AS INT));
 
 CREATE POLICY lote_update_policy ON lotes_cafe FOR UPDATE
-    USING (usuario_id = CAST(current_setting('app.current_user_id') AS INT));
+    USING (id_usuario = CAST(current_setting('app.current_user_id') AS INT));
 
 CREATE POLICY lote_delete_policy ON lotes_cafe FOR DELETE
-    USING (usuario_id = CAST(current_setting('app.current_user_id') AS INT));
+    USING (id_usuario = CAST(current_setting('app.current_user_id') AS INT));

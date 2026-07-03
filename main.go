@@ -49,7 +49,7 @@ func main() {
 	recomendacionService := usecases.NewRecomendacionService(recomendacionRepo, loteRepo)
 	historialService := usecases.NewHistorialService(historialRepo, loteRepo)
 	reporteService := usecases.NewReporteService(reporteRepo, loteRepo)
-	dashboardService := usecases.NewDashboardService(loteRepo, alertaRepo, lecturaRepo, prediccionRepo)
+	dashboardService := usecases.NewDashboardService(loteRepo, alertaRepo, lecturaRepo, prediccionRepo, reporteRepo, sensorRepo)
 
 	// Handlers
 	authHandler := handlers.NewAuthHandler(authService, registerService)

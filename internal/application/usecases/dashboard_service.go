@@ -14,6 +14,8 @@ type DashboardService struct {
 	alertaRepo     interfaces.AlertaRepository
 	lecturaRepo    interfaces.LecturaRepository
 	prediccionRepo interfaces.PrediccionRepository
+	reporteRepo    interfaces.ReporteRepository
+	sensorRepo     interfaces.SensorRepository
 }
 
 func NewDashboardService(
@@ -21,12 +23,16 @@ func NewDashboardService(
 	alertaRepo interfaces.AlertaRepository,
 	lecturaRepo interfaces.LecturaRepository,
 	prediccionRepo interfaces.PrediccionRepository,
+	reporteRepo interfaces.ReporteRepository,
+	sensorRepo interfaces.SensorRepository,
 ) interfaces.DashboardService {
 	return &DashboardService{
 		loteRepo:       loteRepo,
 		alertaRepo:     alertaRepo,
 		lecturaRepo:    lecturaRepo,
 		prediccionRepo: prediccionRepo,
+		reporteRepo:    reporteRepo,
+		sensorRepo:     sensorRepo,
 	}
 }
 
@@ -36,9 +42,21 @@ func (s *DashboardService) GetDashboard(ctx context.Context, usuarioID int) (*en
 		return nil, fmt.Errorf("error getting lotes: %w", err)
 	}
 
+	reportes, err := s.reporteRepo.GetByUsuarioID(ctx, usuarioID)
+	if err != nil {
+		return nil, fmt.Errorf("error getting reportes: %w", err)
+	}
+
+	totalSensores, err := s.sensorRepo.CountByUsuarioID(ctx, usuarioID)
+	if err != nil {
+		return nil, fmt.Errorf("error getting sensores: %w", err)
+	}
+
 	resp := &entities.DashboardResponse{
-		TotalLotes:   len(lotes),
-		LotesResumen: make([]entities.DashboardLoteResumen, 0, len(lotes)),
+		TotalLotes:    len(lotes),
+		TotalReportes: len(reportes),
+		TotalSensores: totalSensores,
+		LotesResumen:  make([]entities.DashboardLoteResumen, 0, len(lotes)),
 	}
 
 	var tempSum, humSum float64

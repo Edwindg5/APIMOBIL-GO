@@ -100,3 +100,16 @@ func (r *SensorRepository) MarcarTokenUsado(ctx context.Context, sensorID int) e
 	`, sensorID)
 	return err
 }
+
+// CountByUsuarioID cuenta sensores distintos asociados a los lotes del usuario.
+// sensores no tiene FK directa a usuarios; la relación es indirecta vía lotes_cafe.
+func (r *SensorRepository) CountByUsuarioID(ctx context.Context, usuarioID int) (int, error) {
+	var count int
+	err := r.db.GetPool().QueryRow(ctx, `
+		SELECT COUNT(DISTINCT s.id_sensor)
+		FROM sensores s
+		INNER JOIN lotes_cafe l ON l.id_sensor = s.id_sensor
+		WHERE l.id_usuario = $1
+	`, usuarioID).Scan(&count)
+	return count, err
+}
