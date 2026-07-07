@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/kajve/api-mobile/internal/application/interfaces"
 	"github.com/kajve/api-mobile/internal/domain/entities"
@@ -37,6 +38,7 @@ func (s *PrediccionService) GetPredicciones(ctx context.Context, loteID, usuario
 		return nil, errors.New("lote not found")
 	}
 
+	log.Printf("DEBUG ownership check: usuarioID=%d lote.UsuarioID=%d loteID=%d", usuarioID, lote.UsuarioID, loteID)
 	if lote.UsuarioID != usuarioID {
 		return nil, errors.New("unauthorized")
 	}
