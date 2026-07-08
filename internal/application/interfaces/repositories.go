@@ -85,4 +85,7 @@ type ReporteRepository interface {
 	Create(ctx context.Context, reporte *entities.Reporte) error
 	// UpdateURLArchivo actualiza la url del archivo generado (reportes no tiene columna "estado")
 	UpdateURLArchivo(ctx context.Context, id int, urlArchivo string) error
+	// CountByUsuarioID cuenta cuántos reportes tiene generados un usuario
+	CountByUsuarioID(ctx context.Context, usuarioID int) (int, error)
+	Delete(ctx context.Context, id int) error
 }

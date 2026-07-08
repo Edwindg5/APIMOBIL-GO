@@ -5,12 +5,17 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"path/filepath"
 
 	"github.com/kajve/api-mobile/internal/application/interfaces"
 	"github.com/kajve/api-mobile/internal/domain/entities"
 	"github.com/kajve/api-mobile/internal/infrastructure/reportgen"
 )
+
+// MaxReportesPorUsuario limita cuántos reportes puede acumular un usuario
+// antes de tener que eliminar o respaldar los existentes.
+const MaxReportesPorUsuario = 30
 
 type ReporteService struct {
 	reporteRepository interfaces.ReporteRepository
@@ -46,6 +51,14 @@ func (s *ReporteService) RequestReporte(ctx context.Context, req *entities.Solic
 	}
 	if lote.UsuarioID != usuarioID {
 		return nil, errors.New("unauthorized")
+	}
+
+	count, err := s.reporteRepository.CountByUsuarioID(ctx, usuarioID)
+	if err != nil {
+		return nil, fmt.Errorf("error counting reportes: %w", err)
+	}
+	if count >= MaxReportesPorUsuario {
+		return nil, errors.New("limite de reportes alcanzado")
 	}
 
 	reporte := &entities.Reporte{
@@ -111,4 +124,28 @@ func (s *ReporteService) DescargarReporte(ctx context.Context, id, usuarioID int
 
 	fileName := reportgen.FileName(reporte.ID, reporte.Formato)
 	return filepath.Join(s.reportsDir, fileName), fileName, nil
+}
+
+func (s *ReporteService) DeleteReporte(ctx context.Context, id, usuarioID int) error {
+	reporte, err := s.reporteRepository.GetByID(ctx, id)
+	if err != nil {
+		return fmt.Errorf("error getting reporte: %w", err)
+	}
+	if reporte == nil {
+		return errors.New("reporte not found")
+	}
+	if reporte.UsuarioID != usuarioID {
+		return errors.New("unauthorized")
+	}
+
+	if err := s.reporteRepository.Delete(ctx, id); err != nil {
+		return fmt.Errorf("error deleting reporte: %w", err)
+	}
+
+	path := filepath.Join(s.reportsDir, reportgen.FileName(reporte.ID, reporte.Formato))
+	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+		log.Printf("error eliminando archivo del reporte %d: %v", id, err)
+	}
+
+	return nil
 }

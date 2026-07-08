@@ -101,6 +101,8 @@ type ReporteService interface {
 	// DescargarReporte valida la propiedad del reporte y devuelve la ruta en disco
 	// y el nombre de archivo sugerido para la descarga.
 	DescargarReporte(ctx context.Context, id, usuarioID int) (path string, fileName string, err error)
+	// DeleteReporte elimina el reporte (registro y archivo en disco) del usuario
+	DeleteReporte(ctx context.Context, id, usuarioID int) error
 }
 
 // DashboardService define los casos de uso del dashboard del productor

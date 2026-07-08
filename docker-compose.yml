@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
@@ -63,8 +61,11 @@ services:
       CORS_ALLOWED_ORIGIN: http://localhost:3000,https://yourdomain.com
       API_WEB_URL: http://api-web:3001
       RATE_LIMIT_REQ_PER_MIN: 100
+      REPORTS_DIR: /root/storage/reportes
     ports:
       - "8080:8080"
+    volumes:
+      - reportes_data:/root/storage/reportes
     depends_on:
       postgres:
         condition: service_healthy
@@ -78,6 +79,8 @@ volumes:
   postgres_data:
     driver: local
   redis_data:
+    driver: local
+  reportes_data:
     driver: local
 
 networks:

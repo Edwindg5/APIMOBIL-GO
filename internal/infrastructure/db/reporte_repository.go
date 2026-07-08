@@ -78,3 +78,18 @@ func (r *ReporteRepository) UpdateURLArchivo(ctx context.Context, id int, urlArc
 	`, urlArchivo, id)
 	return err
 }
+
+// CountByUsuarioID cuenta cuántos reportes tiene generados un usuario.
+func (r *ReporteRepository) CountByUsuarioID(ctx context.Context, usuarioID int) (int, error) {
+	var count int
+	err := r.db.GetPool().QueryRow(ctx,
+		`SELECT COUNT(*) FROM reportes WHERE id_usuario = $1`, usuarioID,
+	).Scan(&count)
+	return count, err
+}
+
+// Delete elimina el registro del reporte de la base de datos.
+func (r *ReporteRepository) Delete(ctx context.Context, id int) error {
+	_, err := r.db.GetPool().Exec(ctx, `DELETE FROM reportes WHERE id_reporte = $1`, id)
+	return err
+}

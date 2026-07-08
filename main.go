@@ -128,6 +128,7 @@ func main() {
 			r.Post("/", reporteHandler.RequestReporte)
 			r.Get("/", reporteHandler.GetReportes)
 			r.Get("/{id}/descargar", reporteHandler.DescargarReporte)
+			r.Delete("/{id}", reporteHandler.DeleteReporte)
 		})
 	})
 

@@ -53,6 +53,8 @@ func (h *ReporteHandler) RequestReporte(w http.ResponseWriter, r *http.Request) 
 			http.Error(w, `{"error": "lote not found"}`, http.StatusNotFound)
 		case "unauthorized":
 			http.Error(w, `{"error": "unauthorized"}`, http.StatusForbidden)
+		case "limite de reportes alcanzado":
+			http.Error(w, `{"error": "Has alcanzado el limite de 30 reportes generados. Elimina reportes antiguos (DELETE /reportes/{id}) o guardalos en un dispositivo externo (USB) antes de generar uno nuevo."}`, http.StatusConflict)
 		default:
 			log.Printf("RequestReporte error (user_id=%d): %v", userID, err)
 			http.Error(w, `{"error": "internal server error"}`, http.StatusInternalServerError)
@@ -126,4 +128,34 @@ func (h *ReporteHandler) DescargarReporte(w http.ResponseWriter, r *http.Request
 	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, fileName))
 	http.ServeFile(w, r, path)
+}
+
+// DeleteReporte maneja DELETE /reportes/{id}
+func (h *ReporteHandler) DeleteReporte(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, `{"error": "unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, `{"error": "invalid id"}`, http.StatusBadRequest)
+		return
+	}
+
+	if err := h.reporteService.DeleteReporte(r.Context(), id, userID); err != nil {
+		switch err.Error() {
+		case "reporte not found":
+			http.Error(w, `{"error": "reporte not found"}`, http.StatusNotFound)
+		case "unauthorized":
+			http.Error(w, `{"error": "unauthorized"}`, http.StatusForbidden)
+		default:
+			log.Printf("DeleteReporte error (user_id=%d): %v", userID, err)
+			http.Error(w, `{"error": "internal server error"}`, http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
