@@ -44,6 +44,9 @@ type Config struct {
 
 	// Rate Limiting
 	RateLimitReqPerMin int
+
+	// Reportes
+	ReportsDir string
 }
 
 func Load() (*Config, error) {
@@ -72,6 +75,7 @@ func Load() (*Config, error) {
 		MQTTUsername:              getEnv("MQTT_USERNAME", "kajve"),
 		MQTTPassword:              getEnv("MQTT_PASSWORD", "kajve_password"),
 		RateLimitReqPerMin:        getEnvInt("RATE_LIMIT_REQ_PER_MIN", 100),
+		ReportsDir:                getEnv("REPORTS_DIR", "./storage/reportes"),
 	}
 
 	return cfg, nil

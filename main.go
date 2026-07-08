@@ -12,6 +12,7 @@ import (
 	"github.com/kajve/api-mobile/internal/delivery/http/handlers"
 	httpmiddleware "github.com/kajve/api-mobile/internal/delivery/http/middleware"
 	"github.com/kajve/api-mobile/internal/infrastructure/db"
+	"github.com/kajve/api-mobile/internal/infrastructure/reportgen"
 )
 
 func main() {
@@ -37,6 +38,10 @@ func main() {
 	historialRepo := db.NewHistorialRepository(postgres)
 	reporteRepo := db.NewReporteRepository(postgres)
 
+	// Generador de reportes (PDF/Excel)
+	reporteCollector := reportgen.NewCollector(lecturaRepo, alertaRepo, prediccionRepo, recomendacionRepo, historialRepo)
+	reporteGenerator := reportgen.NewGenerator(reporteCollector, cfg.ReportsDir)
+
 	// Servicios
 	authService := usecases.NewAuthService(cfg, usuarioRepo)
 	registerService := usecases.NewRegisterService(usuarioRepo)
@@ -48,7 +53,7 @@ func main() {
 	prediccionService := usecases.NewPrediccionService(prediccionRepo, loteRepo)
 	recomendacionService := usecases.NewRecomendacionService(recomendacionRepo, loteRepo)
 	historialService := usecases.NewHistorialService(historialRepo, loteRepo)
-	reporteService := usecases.NewReporteService(reporteRepo, loteRepo)
+	reporteService := usecases.NewReporteService(reporteRepo, loteRepo, usuarioRepo, reporteGenerator, cfg.ReportsDir)
 	dashboardService := usecases.NewDashboardService(loteRepo, alertaRepo, lecturaRepo, prediccionRepo, reporteRepo, sensorRepo)
 
 	// Handlers
@@ -122,6 +127,7 @@ func main() {
 		r.Route("/reportes", func(r chi.Router) {
 			r.Post("/", reporteHandler.RequestReporte)
 			r.Get("/", reporteHandler.GetReportes)
+			r.Get("/{id}/descargar", reporteHandler.DescargarReporte)
 		})
 	})
 
