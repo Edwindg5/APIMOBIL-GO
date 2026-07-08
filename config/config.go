@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -34,7 +35,7 @@ type Config struct {
 	JWTRefreshExpirationHours time.Duration
 
 	// CORS
-	CORSAllowedOrigin string
+	CORSAllowedOrigins []string
 
 	// API
 	APIWebURL       string
@@ -69,7 +70,13 @@ func Load() (*Config, error) {
 		JWTSecret:                 getEnv("JWT_SECRET", "your_super_secret_jwt_key_change_in_production_min_32_chars"),
 		JWTExpirationHours:        time.Duration(getEnvInt("JWT_EXPIRATION_HOURS", 24)) * time.Hour,
 		JWTRefreshExpirationHours: time.Duration(getEnvInt("JWT_REFRESH_EXPIRATION_HOURS", 720)) * time.Hour,
-		CORSAllowedOrigin:         getEnv("CORS_ALLOWED_ORIGIN", "http://localhost:3000"),
+		CORSAllowedOrigins: getEnvSlice("CORS_ALLOWED_ORIGINS", []string{
+			"http://localhost:4200",
+			"http://movil-kajve.dnc-ed-denz.shop",
+			"https://movil-kajve.dnc-ed-denz.shop",
+			"http://dnc-ed-denz.shop",
+			"https://dnc-ed-denz.shop",
+		}),
 		APIWebURL:                 getEnv("API_WEB_URL", "http://api-web:3001"),
 		MQTTBrokerURL:             getEnv("MQTT_BROKER_URL", "mqtt://mosquitto:1883"),
 		MQTTUsername:              getEnv("MQTT_USERNAME", "kajve"),
@@ -101,6 +108,29 @@ func getEnv(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
+}
+
+// getEnvSlice lee una variable de entorno con valores separados por comas
+// (ej: "http://a.com,http://b.com") y la convierte en un slice de strings,
+// recortando espacios y descartando entradas vacías.
+func getEnvSlice(key string, defaultValue []string) []string {
+	valueStr, exists := os.LookupEnv(key)
+	if !exists || strings.TrimSpace(valueStr) == "" {
+		return defaultValue
+	}
+
+	parts := strings.Split(valueStr, ",")
+	result := make([]string, 0, len(parts))
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(part)
+		if trimmed != "" {
+			result = append(result, trimmed)
+		}
+	}
+	if len(result) == 0 {
+		return defaultValue
+	}
+	return result
 }
 
 func getEnvInt(key string, defaultValue int) int {

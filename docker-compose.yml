@@ -58,7 +58,7 @@ services:
       JWT_SECRET: your_super_secret_jwt_key_change_in_production_min_32_chars
       JWT_EXPIRATION_HOURS: 24
       JWT_REFRESH_EXPIRATION_HOURS: 720
-      CORS_ALLOWED_ORIGIN: http://localhost:3000,https://yourdomain.com
+      CORS_ALLOWED_ORIGINS: http://localhost:4200,http://movil-kajve.dnc-ed-denz.shop,https://movil-kajve.dnc-ed-denz.shop,http://dnc-ed-denz.shop,https://dnc-ed-denz.shop
       API_WEB_URL: http://api-web:3001
       RATE_LIMIT_REQ_PER_MIN: 100
       REPORTS_DIR: /root/storage/reportes

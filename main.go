@@ -74,7 +74,7 @@ func main() {
 	router.Use(middleware.Logger)
 	router.Use(middleware.Recoverer)
 	router.Use(httpmiddleware.JSONContentType)
-	router.Use(httpmiddleware.CORSMiddleware(cfg.CORSAllowedOrigin))
+	router.Use(httpmiddleware.CORSMiddleware(cfg.CORSAllowedOrigins))
 
 	rateLimiter := httpmiddleware.NewRateLimiter(cfg.RateLimitReqPerMin)
 	router.Use(rateLimiter.Middleware())
