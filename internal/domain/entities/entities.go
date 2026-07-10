@@ -133,21 +133,22 @@ type Sensor struct {
 	UltimaConexion    *time.Time `db:"ultima_conexion"`
 }
 
-// LoteCafe representa un lote de secado de café
+// LoteCafe representa un lote de secado de café.
+// Variedad, PesoKg, Ubicacion y FechaInicioSecado son nullable en la BD real
+// (sin NOT NULL): lotes pre-creados por api-web (ver PUT /lotes/reclamar)
+// pueden dejarlos sin setear hasta que el productor los complete.
 type LoteCafe struct {
-	ID         int    `db:"id_lote" json:"id"`
-	UsuarioID  int    `db:"id_usuario" json:"usuario_id"`
-	NombreLote string `db:"nombre_lote" json:"nombre_lote"`
-	Variedad   string `db:"variedad" json:"variedad"`
-	// TipoProceso es nullable en la BD real (sin NOT NULL): lotes pre-creados por
-	// api-web (ver PUT /lotes/reclamar) pueden no setearlo.
+	ID                int        `db:"id_lote" json:"id"`
+	UsuarioID         int        `db:"id_usuario" json:"usuario_id"`
+	NombreLote        string     `db:"nombre_lote" json:"nombre_lote"`
+	Variedad          *string    `db:"variedad" json:"variedad"`
 	TipoProceso       *string    `db:"tipo_proceso" json:"tipo_proceso"`
-	PesoKg            float64    `db:"peso_kg" json:"peso_kg"`
-	Ubicacion         string     `db:"ubicacion" json:"ubicacion"`
+	PesoKg            *float64   `db:"peso_kg" json:"peso_kg"`
+	Ubicacion         *string    `db:"ubicacion" json:"ubicacion"`
 	IDSensor          *int       `db:"id_sensor" json:"id_sensor"`
 	CodigoQR          string     `db:"codigo_qr" json:"codigo_qr"`
 	Estado            string     `db:"estado" json:"estado"` // 'en_proceso', 'finalizado', 'cancelado'
-	FechaInicioSecado time.Time  `db:"fecha_inicio_secado" json:"fecha_inicio_secado"`
+	FechaInicioSecado *time.Time `db:"fecha_inicio_secado" json:"fecha_inicio_secado"`
 	FechaFinSecado    *time.Time `db:"fecha_fin_secado" json:"fecha_fin_secado"`
 	LinkedAt          *time.Time `db:"linked_at" json:"linked_at"`
 	CreatedAt         time.Time  `db:"created_at" json:"created_at"`
@@ -157,14 +158,14 @@ type LoteCafe struct {
 type LoteListItem struct {
 	ID                int        `json:"id"`
 	NombreLote        string     `json:"nombre_lote"`
-	Variedad          string     `json:"variedad"`
+	Variedad          *string    `json:"variedad"`
 	TipoProceso       *string    `json:"tipo_proceso"`
-	PesoKg            float64    `json:"peso_kg"`
-	Ubicacion         string     `json:"ubicacion"`
+	PesoKg            *float64   `json:"peso_kg"`
+	Ubicacion         *string    `json:"ubicacion"`
 	IDSensor          *int       `json:"id_sensor"`
 	CodigoQR          string     `json:"codigo_qr"`
 	Estado            string     `json:"estado"`
-	FechaInicioSecado time.Time  `json:"fecha_inicio_secado"`
+	FechaInicioSecado *time.Time `json:"fecha_inicio_secado"`
 	FechaFinSecado    *time.Time `json:"fecha_fin_secado"`
 	CreatedAt         time.Time  `json:"created_at"`
 }

@@ -223,14 +223,14 @@ func (e *excelBuilder) buildResumen() error {
 	lote := e.data.Lote
 	loteRows := [][2]string{
 		{"Lote", lote.NombreLote},
-		{"Variedad", capitalize(lote.Variedad)},
+		{"Variedad", capitalizePtr(lote.Variedad)},
 		{"Proceso", capitalizePtr(lote.TipoProceso)},
-		{"Peso (kg)", fmt.Sprintf("%.1f", lote.PesoKg)},
-		{"Ubicación", lote.Ubicacion},
+		{"Peso (kg)", formatPesoPtr(lote.PesoKg, "")},
+		{"Ubicación", textPtr(lote.Ubicacion)},
 		{"Estado", capitalize(lote.Estado)},
 		{"Usuario", e.data.UsuarioNombre},
-		{"Inicio de secado", lote.FechaInicioSecado.Format("02/01/2006 15:04")},
-		{"Fin de secado", formatFechaPtr(lote.FechaFinSecado)},
+		{"Inicio de secado", formatFechaPtr(lote.FechaInicioSecado, "Sin iniciar")},
+		{"Fin de secado", formatFechaPtr(lote.FechaFinSecado, "En curso")},
 		{"Código QR", lote.CodigoQR},
 	}
 	row, err := e.writeKeyValueTable(sheet, 4, "Información del lote", loteRows)

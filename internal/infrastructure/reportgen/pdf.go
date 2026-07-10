@@ -153,7 +153,7 @@ func (b *pdfBuilder) drawTitleBlock() {
 	pdf.SetFont("Arial", "", 10)
 	pdf.SetTextColor(colorMuted.R, colorMuted.G, colorMuted.B)
 	pdf.SetX(marginX)
-	subt := fmt.Sprintf("%s · %s · %s", capitalize(lote.Variedad), capitalizePtr(lote.TipoProceso), lote.Ubicacion)
+	subt := fmt.Sprintf("%s · %s · %s", capitalizePtr(lote.Variedad), capitalizePtr(lote.TipoProceso), textPtr(lote.Ubicacion))
 	pdf.CellFormat(0, 6, b.tr(subt), "", 1, "L", false, 0, "")
 	pdf.Ln(2)
 }
@@ -172,9 +172,9 @@ func (b *pdfBuilder) drawLoteInfoCard() {
 	colW := (pageW - 2*marginX - 10) / 2
 	rows := [][2]string{
 		{"Usuario", b.data.UsuarioNombre},
-		{"Peso", fmt.Sprintf("%.1f kg", lote.PesoKg)},
-		{"Inicio de secado", lote.FechaInicioSecado.Format("02/01/2006 15:04")},
-		{"Fin de secado", formatFechaPtr(lote.FechaFinSecado)},
+		{"Peso", formatPesoPtr(lote.PesoKg, " kg")},
+		{"Inicio de secado", formatFechaPtr(lote.FechaInicioSecado, "Sin iniciar")},
+		{"Fin de secado", formatFechaPtr(lote.FechaFinSecado, "En curso")},
 		{"Código QR", lote.CodigoQR},
 		{"Tipo de reporte", capitalize(b.data.TipoReporte)},
 	}

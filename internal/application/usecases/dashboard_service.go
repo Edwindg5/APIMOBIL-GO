@@ -71,11 +71,16 @@ func (s *DashboardService) GetDashboard(ctx context.Context, usuarioID int) (*en
 			resp.LotesFinalizados++
 		}
 
+		diasSecado := 0
+		if lote.FechaInicioSecado != nil {
+			diasSecado = int(time.Since(*lote.FechaInicioSecado).Hours() / 24)
+		}
+
 		resumen := entities.DashboardLoteResumen{
 			IDLote:     lote.ID,
 			NombreLote: lote.NombreLote,
 			Estado:     lote.Estado,
-			DiasSecado: int(time.Since(lote.FechaInicioSecado).Hours() / 24),
+			DiasSecado: diasSecado,
 		}
 
 		// Última lectura del lote

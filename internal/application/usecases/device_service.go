@@ -54,10 +54,10 @@ func (s *DeviceService) LinkDevice(ctx context.Context, esp32ID, provisioningTok
 	lote := &entities.LoteCafe{
 		UsuarioID:   usuarioID,
 		NombreLote:  fmt.Sprintf("Lote %s", esp32ID),
-		Variedad:    "arabica",
+		Variedad:    nil,
 		TipoProceso: &tipoProceso,
-		PesoKg:      0,
-		Ubicacion:   "",
+		PesoKg:      nil,
+		Ubicacion:   nil,
 		IDSensor:    &sensor.ID,
 		Estado:      "en_proceso",
 	}
