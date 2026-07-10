@@ -185,3 +185,33 @@ func (r *LoteRepository) UpdateEstado(ctx context.Context, loteID, usuarioID int
 	}
 	return lote, nil
 }
+
+// ReclamarLote asigna a usuarioID un lote pre-creado por api-web (dueño placeholderUsuarioID,
+// aun sin vincular). El UPDATE es atómico: solo afecta la fila si sigue "disponible", lo que
+// evita condiciones de carrera si dos usuarios reclaman el mismo QR al mismo tiempo.
+func (r *LoteRepository) ReclamarLote(ctx context.Context, codigoQR string, usuarioID, placeholderUsuarioID int) (*entities.LoteCafe, error) {
+	tx, err := r.db.BeginTx(ctx, usuarioID)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+
+	lote := &entities.LoteCafe{}
+	err = scanLote(tx.QueryRow(ctx, `
+		UPDATE lotes_cafe
+		SET id_usuario = $1, linked_at = NOW()
+		WHERE codigo_qr = $2 AND id_usuario = $3 AND linked_at IS NULL
+		RETURNING `+loteColumns,
+		usuarioID, codigoQR, placeholderUsuarioID,
+	), lote)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+	return lote, nil
+}

@@ -25,6 +25,10 @@ type LoteRepository interface {
 	Create(ctx context.Context, lote *entities.LoteCafe) (*entities.LoteCafe, error)
 	Update(ctx context.Context, loteID, usuarioID int, nombre, variedad string, pesoKg float64, ubicacion string) (*entities.LoteCafe, error)
 	UpdateEstado(ctx context.Context, loteID, usuarioID int, estado string, fechaFin *time.Time) (*entities.LoteCafe, error)
+	// ReclamarLote asigna a usuarioID un lote cuyo dueño actual es placeholderUsuarioID
+	// (creado por api-web) y que aun no fue vinculado. Devuelve nil, nil si el codigo_qr
+	// no existe, ya fue reclamado, o no pertenece al placeholder.
+	ReclamarLote(ctx context.Context, codigoQR string, usuarioID, placeholderUsuarioID int) (*entities.LoteCafe, error)
 }
 
 // SensorRepository define las operaciones para sensores

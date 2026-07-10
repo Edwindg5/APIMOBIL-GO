@@ -47,7 +47,7 @@ func main() {
 	registerService := usecases.NewRegisterService(usuarioRepo)
 	profileService := usecases.NewProfileService(usuarioRepo)
 	deviceService := usecases.NewDeviceService(sensorRepo, loteRepo, historialRepo)
-	loteService := usecases.NewLoteService(loteRepo, historialRepo, lecturaRepo, alertaRepo, prediccionRepo)
+	loteService := usecases.NewLoteService(loteRepo, historialRepo, lecturaRepo, alertaRepo, prediccionRepo, cfg.PlaceholderLoteUserID)
 	lecturaService := usecases.NewLecturaService(lecturaRepo, loteRepo)
 	alertaService := usecases.NewAlertaService(alertaRepo, loteRepo, historialRepo)
 	prediccionService := usecases.NewPrediccionService(prediccionRepo, loteRepo)
@@ -110,6 +110,7 @@ func main() {
 		r.Route("/lotes", func(r chi.Router) {
 			r.Get("/", loteHandler.GetLotes)
 			r.Post("/", loteHandler.CreateLote)
+			r.Put("/reclamar", loteHandler.ReclamarLote)
 			r.Get("/{id}", loteHandler.GetLote)
 			r.Put("/{id}", loteHandler.UpdateLote)
 			r.Delete("/{id}", loteHandler.CancelarLote)

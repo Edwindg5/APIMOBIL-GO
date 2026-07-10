@@ -11,11 +11,12 @@ import (
 )
 
 type LoteService struct {
-	loteRepo       interfaces.LoteRepository
-	historialRepo  interfaces.HistorialRepository
-	lecturaRepo    interfaces.LecturaRepository
-	alertaRepo     interfaces.AlertaRepository
-	prediccionRepo interfaces.PrediccionRepository
+	loteRepo             interfaces.LoteRepository
+	historialRepo        interfaces.HistorialRepository
+	lecturaRepo          interfaces.LecturaRepository
+	alertaRepo           interfaces.AlertaRepository
+	prediccionRepo       interfaces.PrediccionRepository
+	placeholderUsuarioID int
 }
 
 // NewLoteService crea una nueva instancia del servicio
@@ -25,13 +26,15 @@ func NewLoteService(
 	lecturaRepo interfaces.LecturaRepository,
 	alertaRepo interfaces.AlertaRepository,
 	prediccionRepo interfaces.PrediccionRepository,
+	placeholderUsuarioID int,
 ) interfaces.LoteService {
 	return &LoteService{
-		loteRepo:       loteRepo,
-		historialRepo:  historialRepo,
-		lecturaRepo:    lecturaRepo,
-		alertaRepo:     alertaRepo,
-		prediccionRepo: prediccionRepo,
+		loteRepo:             loteRepo,
+		historialRepo:        historialRepo,
+		lecturaRepo:          lecturaRepo,
+		alertaRepo:           alertaRepo,
+		prediccionRepo:       prediccionRepo,
+		placeholderUsuarioID: placeholderUsuarioID,
 	}
 }
 
@@ -184,4 +187,27 @@ func (s *LoteService) CancelarLote(ctx context.Context, loteID, usuarioID int) e
 		return errors.New("lote not found or not in process")
 	}
 	return nil
+}
+
+// ReclamarLote asigna al usuario autenticado un lote pre-creado por api-web (dueño
+// placeholder) mediante el codigo_qr escaneado, y registra el evento en historial.
+func (s *LoteService) ReclamarLote(ctx context.Context, codigoQR string, usuarioID int) (*entities.LoteCafe, error) {
+	lote, err := s.loteRepo.ReclamarLote(ctx, codigoQR, usuarioID, s.placeholderUsuarioID)
+	if err != nil {
+		return nil, fmt.Errorf("error reclamando lote: %w", err)
+	}
+	if lote == nil {
+		return nil, errors.New("codigo qr invalido o ya utilizado")
+	}
+
+	evento := &entities.HistorialEvento{
+		LoteID:      lote.ID,
+		UsuarioID:   &usuarioID,
+		TipoEvento:  "lote_reclamado",
+		Descripcion: fmt.Sprintf("Lote '%s' reclamado mediante escaneo de QR", lote.NombreLote),
+	}
+	// El error del historial no cancela el reclamo
+	_ = s.historialRepo.Create(ctx, evento)
+
+	return lote, nil
 }

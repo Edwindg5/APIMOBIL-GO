@@ -64,6 +64,9 @@ type LoteService interface {
 
 	// CancelarLote cambia estado a 'cancelado' (soft delete)
 	CancelarLote(ctx context.Context, loteID, usuarioID int) error
+
+	// ReclamarLote asigna al usuario autenticado un lote pre-creado por api-web vía codigo_qr
+	ReclamarLote(ctx context.Context, codigoQR string, usuarioID int) (*entities.LoteCafe, error)
 }
 
 // LecturaService define los casos de uso de lecturas

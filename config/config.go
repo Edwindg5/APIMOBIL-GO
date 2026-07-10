@@ -48,6 +48,9 @@ type Config struct {
 
 	// Reportes
 	ReportsDir string
+
+	// Lotes reclamados por QR (creados como placeholder por api-web)
+	PlaceholderLoteUserID int
 }
 
 func Load() (*Config, error) {
@@ -84,6 +87,12 @@ func Load() (*Config, error) {
 		RateLimitReqPerMin:        getEnvInt("RATE_LIMIT_REQ_PER_MIN", 100),
 		ReportsDir:                getEnv("REPORTS_DIR", "./storage/reportes"),
 	}
+
+	placeholderLoteUserID, err := getEnvIntRequired("PLACEHOLDER_LOTE_USER_ID")
+	if err != nil {
+		return nil, err
+	}
+	cfg.PlaceholderLoteUserID = placeholderLoteUserID
 
 	return cfg, nil
 }
@@ -143,4 +152,18 @@ func getEnvInt(key string, defaultValue int) int {
 		return defaultValue
 	}
 	return value
+}
+
+// getEnvIntRequired lee una variable de entorno entera sin valor por defecto:
+// falla explícito si falta o no es numérica, en vez de asumir un valor.
+func getEnvIntRequired(key string) (int, error) {
+	valueStr, exists := os.LookupEnv(key)
+	if !exists || strings.TrimSpace(valueStr) == "" {
+		return 0, fmt.Errorf("required environment variable %s is not set", key)
+	}
+	value, err := strconv.Atoi(valueStr)
+	if err != nil {
+		return 0, fmt.Errorf("environment variable %s must be an integer: %w", key, err)
+	}
+	return value, nil
 }

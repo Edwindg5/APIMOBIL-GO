@@ -211,6 +211,41 @@ func (h *LoteHandler) CancelarLote(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"message": "Lote cancelado"})
 }
 
+// ReclamarLote maneja PUT /lotes/reclamar
+func (h *LoteHandler) ReclamarLote(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, `{"error": "unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+
+	var req entities.ReclamarLoteRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error": "invalid request body"}`, http.StatusBadRequest)
+		return
+	}
+
+	if err := h.validator.Struct(req); err != nil {
+		http.Error(w, `{"error": "validation failed"}`, http.StatusBadRequest)
+		return
+	}
+
+	lote, err := h.loteService.ReclamarLote(r.Context(), req.CodigoQR, userID)
+	if err != nil {
+		switch err.Error() {
+		case "codigo qr invalido o ya utilizado":
+			http.Error(w, `{"error": "Este código QR no es válido o ya fue utilizado"}`, http.StatusConflict)
+		default:
+			log.Printf("ReclamarLote error (user_id=%d): %v", userID, err)
+			http.Error(w, `{"error": "internal server error"}`, http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(lote)
+}
+
 // GetQR maneja GET /lotes/{id}/qr
 func (h *LoteHandler) GetQR(w http.ResponseWriter, r *http.Request) {
 	userID, ok := middleware.GetUserIDFromContext(r.Context())

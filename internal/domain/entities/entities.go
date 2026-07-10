@@ -107,6 +107,12 @@ type LinkDeviceRequest struct {
 	ProvisioningToken string `json:"provisioning_token" validate:"required"`
 }
 
+// ReclamarLoteRequest es la solicitud para reclamar un lote pre-creado por
+// api-web (dueño placeholder) mediante el codigo_qr escaneado por la app móvil.
+type ReclamarLoteRequest struct {
+	CodigoQR string `json:"codigo_qr" validate:"required"`
+}
+
 // LinkDeviceResponse es la respuesta de vinculación (retorna el lote creado)
 type LinkDeviceResponse struct {
 	Lote    *LoteCafe `json:"lote"`
