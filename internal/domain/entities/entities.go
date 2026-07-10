@@ -135,11 +135,13 @@ type Sensor struct {
 
 // LoteCafe representa un lote de secado de café
 type LoteCafe struct {
-	ID                int        `db:"id_lote" json:"id"`
-	UsuarioID         int        `db:"id_usuario" json:"usuario_id"`
-	NombreLote        string     `db:"nombre_lote" json:"nombre_lote"`
-	Variedad          string     `db:"variedad" json:"variedad"`
-	TipoProceso       string     `db:"tipo_proceso" json:"tipo_proceso"`
+	ID         int    `db:"id_lote" json:"id"`
+	UsuarioID  int    `db:"id_usuario" json:"usuario_id"`
+	NombreLote string `db:"nombre_lote" json:"nombre_lote"`
+	Variedad   string `db:"variedad" json:"variedad"`
+	// TipoProceso es nullable en la BD real (sin NOT NULL): lotes pre-creados por
+	// api-web (ver PUT /lotes/reclamar) pueden no setearlo.
+	TipoProceso       *string    `db:"tipo_proceso" json:"tipo_proceso"`
 	PesoKg            float64    `db:"peso_kg" json:"peso_kg"`
 	Ubicacion         string     `db:"ubicacion" json:"ubicacion"`
 	IDSensor          *int       `db:"id_sensor" json:"id_sensor"`
@@ -156,7 +158,7 @@ type LoteListItem struct {
 	ID                int        `json:"id"`
 	NombreLote        string     `json:"nombre_lote"`
 	Variedad          string     `json:"variedad"`
-	TipoProceso       string     `json:"tipo_proceso"`
+	TipoProceso       *string    `json:"tipo_proceso"`
 	PesoKg            float64    `json:"peso_kg"`
 	Ubicacion         string     `json:"ubicacion"`
 	IDSensor          *int       `json:"id_sensor"`

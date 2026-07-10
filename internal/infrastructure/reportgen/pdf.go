@@ -153,7 +153,7 @@ func (b *pdfBuilder) drawTitleBlock() {
 	pdf.SetFont("Arial", "", 10)
 	pdf.SetTextColor(colorMuted.R, colorMuted.G, colorMuted.B)
 	pdf.SetX(marginX)
-	subt := fmt.Sprintf("%s · %s · %s", capitalize(lote.Variedad), capitalize(lote.TipoProceso), lote.Ubicacion)
+	subt := fmt.Sprintf("%s · %s · %s", capitalize(lote.Variedad), capitalizePtr(lote.TipoProceso), lote.Ubicacion)
 	pdf.CellFormat(0, 6, b.tr(subt), "", 1, "L", false, 0, "")
 	pdf.Ln(2)
 }

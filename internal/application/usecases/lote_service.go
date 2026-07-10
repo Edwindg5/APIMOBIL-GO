@@ -129,7 +129,7 @@ func (s *LoteService) CreateLote(ctx context.Context, req *entities.CreateLoteRe
 		UsuarioID:   usuarioID,
 		NombreLote:  req.NombreLote,
 		Variedad:    req.Variedad,
-		TipoProceso: req.TipoProceso,
+		TipoProceso: &req.TipoProceso,
 		PesoKg:      req.PesoKg,
 		Ubicacion:   req.Ubicacion,
 		IDSensor:    req.IDSensor,

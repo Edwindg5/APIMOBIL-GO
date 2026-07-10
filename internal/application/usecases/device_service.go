@@ -50,11 +50,12 @@ func (s *DeviceService) LinkDevice(ctx context.Context, esp32ID, provisioningTok
 		return nil, fmt.Errorf("error marking token: %w", err)
 	}
 
+	tipoProceso := "lavado"
 	lote := &entities.LoteCafe{
 		UsuarioID:   usuarioID,
 		NombreLote:  fmt.Sprintf("Lote %s", esp32ID),
 		Variedad:    "arabica",
-		TipoProceso: "lavado",
+		TipoProceso: &tipoProceso,
 		PesoKg:      0,
 		Ubicacion:   "",
 		IDSensor:    &sensor.ID,

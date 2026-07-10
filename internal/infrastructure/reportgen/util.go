@@ -27,3 +27,10 @@ func formatFechaPtr(t *time.Time) string {
 	}
 	return t.Format("02/01/2006 15:04")
 }
+
+func capitalizePtr(s *string) string {
+	if s == nil {
+		return "Sin especificar"
+	}
+	return capitalize(*s)
+}

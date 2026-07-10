@@ -77,8 +77,8 @@ func newExcelBuilder(f *excelize.File, data *ReportData) (*excelBuilder, error) 
 	e := &excelBuilder{f: f, data: data}
 
 	styles := []struct {
-		id   *int
-		st   *excelize.Style
+		id *int
+		st *excelize.Style
 	}{
 		{&e.styleTitle, &excelize.Style{
 			Font:      &excelize.Font{Bold: true, Size: 18, Color: hexGold},
@@ -224,7 +224,7 @@ func (e *excelBuilder) buildResumen() error {
 	loteRows := [][2]string{
 		{"Lote", lote.NombreLote},
 		{"Variedad", capitalize(lote.Variedad)},
-		{"Proceso", capitalize(lote.TipoProceso)},
+		{"Proceso", capitalizePtr(lote.TipoProceso)},
 		{"Peso (kg)", fmt.Sprintf("%.1f", lote.PesoKg)},
 		{"Ubicación", lote.Ubicacion},
 		{"Estado", capitalize(lote.Estado)},
