@@ -47,12 +47,18 @@ func (r *UsuarioRepository) GetByEmail(ctx context.Context, email string) (*enti
 	return usuario, nil
 }
 
-// GetByID obtiene un usuario por ID
+// GetByID obtiene un usuario por ID.
+// es_premium_real recalcula la suscripción en tiempo real en vez de confiar en la
+// columna cruda usuarios.es_premium: un ticker externo la apaga cuando vence
+// premium_hasta, pero puede haber una ventana de minutos con datos desactualizados.
+// COALESCE evita un NULL AND ... indeterminado si es_premium llega nulo.
 func (r *UsuarioRepository) GetByID(ctx context.Context, id int) (*entities.Usuario, error) {
 	usuario := &entities.Usuario{}
 
 	err := r.db.GetPool().QueryRow(ctx, `
-		SELECT id_usuario, nombre, email, password_hash, rol, telefono, estado, fecha_registro
+		SELECT id_usuario, nombre, email, password_hash, rol, telefono, estado, fecha_registro,
+			COALESCE(es_premium, false) AND (premium_hasta IS NULL OR premium_hasta > NOW()) AS es_premium_real,
+			premium_hasta
 		FROM usuarios
 		WHERE id_usuario = $1
 	`, id).Scan(
@@ -64,6 +70,8 @@ func (r *UsuarioRepository) GetByID(ctx context.Context, id int) (*entities.Usua
 		&usuario.Telefono,
 		&usuario.Estado,
 		&usuario.FechaRegistro,
+		&usuario.EsPremium,
+		&usuario.PremiumHasta,
 	)
 
 	if err != nil {

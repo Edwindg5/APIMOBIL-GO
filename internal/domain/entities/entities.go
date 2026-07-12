@@ -16,6 +16,11 @@ type Usuario struct {
 	Telefono      *string   `db:"telefono"`
 	Estado        string    `db:"estado"` // 'activo', 'inactivo'
 	FechaRegistro time.Time `db:"fecha_registro"`
+	// EsPremium y PremiumHasta solo los popula GetByID (recalculo en tiempo real
+	// contra premium_hasta; ver usuario_repository.go). Otras queries (GetByEmail,
+	// Create, Update) los dejan en su zero value.
+	EsPremium    bool       `db:"es_premium_real"`
+	PremiumHasta *time.Time `db:"premium_hasta"`
 }
 
 // RegisterRequest es la solicitud de registro de nuevo usuario
@@ -44,6 +49,11 @@ type PerfilResponse struct {
 	Telefono      *string   `json:"telefono"`
 	Estado        string    `json:"estado"`
 	FechaRegistro time.Time `json:"fecha_registro"`
+	// EsPremium es el resultado recalculado en tiempo real (no la columna cruda):
+	// puede dar false aunque usuarios.es_premium siga en true si ya venció
+	// premium_hasta y el ticker externo todavía no la apagó.
+	EsPremium    bool       `json:"es_premium"`
+	PremiumHasta *time.Time `json:"premium_hasta"`
 }
 
 // UpdatePerfilRequest es la solicitud de actualización de perfil

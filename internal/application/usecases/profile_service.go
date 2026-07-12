@@ -80,5 +80,7 @@ func toPerfilResponse(u *entities.Usuario) *entities.PerfilResponse {
 		Telefono:      u.Telefono,
 		Estado:        u.Estado,
 		FechaRegistro: u.FechaRegistro,
+		EsPremium:     u.EsPremium,
+		PremiumHasta:  u.PremiumHasta,
 	}
 }
