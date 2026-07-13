@@ -100,12 +100,13 @@ func (r *LecturaRepository) GetEstadisticas(ctx context.Context, loteID int) (*e
 		return nil, err
 	}
 
-	// Aggregate alertas
+	// Aggregate alertas. SUM(...) sobre cero filas da NULL (a diferencia de COUNT),
+	// asi que necesita su propio COALESCE para no romper el Scan en lotes sin alertas.
 	err = r.db.GetPool().QueryRow(ctx, `
 		SELECT
 			COUNT(*),
-			SUM(CASE WHEN nivel_severidad = 'critica' THEN 1 ELSE 0 END),
-			SUM(CASE WHEN NOT atendida THEN 1 ELSE 0 END)
+			COALESCE(SUM(CASE WHEN nivel_severidad = 'critica' THEN 1 ELSE 0 END), 0),
+			COALESCE(SUM(CASE WHEN NOT atendida THEN 1 ELSE 0 END), 0)
 		FROM alertas
 		WHERE id_lote = $1
 	`, loteID).Scan(&stats.TotalAlertas, &stats.AlertasCriticas, &stats.AlertasSinAtender)
