@@ -30,21 +30,22 @@ type Config struct {
 	RedisDB       int
 
 	// JWT
-	JWTSecret              string
-	JWTExpirationHours     time.Duration
+	JWTSecret                 string
+	JWTExpirationHours        time.Duration
 	JWTRefreshExpirationHours time.Duration
 
 	// CORS
 	CORSAllowedOrigins []string
 
 	// API
-	APIWebURL       string
-	MQTTBrokerURL   string
-	MQTTUsername    string
-	MQTTPassword    string
+	APIWebURL     string
+	MQTTBrokerURL string
+	MQTTUsername  string
+	MQTTPassword  string
 
 	// Rate Limiting
 	RateLimitReqPerMin int
+	RateLimitBurst     int
 
 	// Reportes
 	ReportsDir string
@@ -80,12 +81,13 @@ func Load() (*Config, error) {
 			"http://dnc-ed-denz.shop",
 			"https://dnc-ed-denz.shop",
 		}),
-		APIWebURL:                 getEnv("API_WEB_URL", "http://api-web:3001"),
-		MQTTBrokerURL:             getEnv("MQTT_BROKER_URL", "mqtt://mosquitto:1883"),
-		MQTTUsername:              getEnv("MQTT_USERNAME", "kajve"),
-		MQTTPassword:              getEnv("MQTT_PASSWORD", "kajve_password"),
-		RateLimitReqPerMin:        getEnvInt("RATE_LIMIT_REQ_PER_MIN", 100),
-		ReportsDir:                getEnv("REPORTS_DIR", "./storage/reportes"),
+		APIWebURL:          getEnv("API_WEB_URL", "http://api-web:3001"),
+		MQTTBrokerURL:      getEnv("MQTT_BROKER_URL", "mqtt://mosquitto:1883"),
+		MQTTUsername:       getEnv("MQTT_USERNAME", "kajve"),
+		MQTTPassword:       getEnv("MQTT_PASSWORD", "kajve_password"),
+		RateLimitReqPerMin: getEnvInt("RATE_LIMIT_REQ_PER_MIN", 100),
+		RateLimitBurst:     getEnvInt("RATE_LIMIT_BURST", 20),
+		ReportsDir:         getEnv("REPORTS_DIR", "./storage/reportes"),
 	}
 
 	placeholderLoteUserID, err := getEnvIntRequired("PLACEHOLDER_LOTE_USER_ID")

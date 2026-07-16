@@ -16,12 +16,12 @@ type RateLimiter struct {
 }
 
 // NewRateLimiter crea un nuevo rate limiter
-func NewRateLimiter(requestsPerMinute int) *RateLimiter {
+func NewRateLimiter(requestsPerMinute, burst int) *RateLimiter {
 	rps := rate.Limit(float64(requestsPerMinute) / 60.0)
 	return &RateLimiter{
 		limiters: make(map[string]*rate.Limiter),
 		rps:      rps,
-		burst:    1,
+		burst:    burst,
 	}
 }
 

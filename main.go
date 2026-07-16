@@ -76,7 +76,7 @@ func main() {
 	router.Use(httpmiddleware.JSONContentType)
 	router.Use(httpmiddleware.CORSMiddleware(cfg.CORSAllowedOrigins))
 
-	rateLimiter := httpmiddleware.NewRateLimiter(cfg.RateLimitReqPerMin)
+	rateLimiter := httpmiddleware.NewRateLimiter(cfg.RateLimitReqPerMin, cfg.RateLimitBurst)
 	router.Use(rateLimiter.Middleware())
 
 	// Rutas públicas
