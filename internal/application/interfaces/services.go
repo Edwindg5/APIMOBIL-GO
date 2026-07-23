@@ -59,8 +59,21 @@ type LoteService interface {
 	// UpdateLote actualiza campos editables de un lote en estado 'en_proceso'
 	UpdateLote(ctx context.Context, loteID, usuarioID int, req *entities.UpdateLoteRequest) (*entities.LoteCafe, error)
 
-	// FinalizarLote cambia estado a 'finalizado' y registra evento en historial
-	FinalizarLote(ctx context.Context, loteID, usuarioID int) (*entities.LoteCafe, error)
+	// FinalizarLote cambia estado a 'finalizado', registra evento en historial, y reporta el
+	// tiempo real de secado a microservicioMLL como retroalimentación para reentrenamiento.
+	FinalizarLote(ctx context.Context, loteID, usuarioID int, req *entities.FinalizarLoteRequest) (*entities.LoteCafe, error)
+
+	// ReportarCatacion reporta el puntaje real de catación (escala SCA 0-100) de un lote ya
+	// finalizado. A diferencia de FinalizarLote, sí regresa error al caller si microservicioMLL no
+	// pudo guardar el dato -- reportar la catación es la operación completa aquí, no un efecto
+	// secundario de otra cosa más importante.
+	ReportarCatacion(ctx context.Context, loteID, usuarioID int, req *entities.ReportarCatacionRequest) error
+
+	// ObtenerReporteNarrativo obtiene de microservicioMLL el reporte en lenguaje natural (NLG) del
+	// lote -- combina alertas, predicciones y recomendaciones en un solo texto, generado al
+	// momento en cada llamada. Requiere pasar por Go porque microservicioMLL protege ese endpoint
+	// con una API key interna que la app móvil nunca debe tener.
+	ObtenerReporteNarrativo(ctx context.Context, loteID, usuarioID int) (*entities.ReporteNarrativo, error)
 
 	// CancelarLote cambia estado a 'cancelado' (soft delete)
 	CancelarLote(ctx context.Context, loteID, usuarioID int) error

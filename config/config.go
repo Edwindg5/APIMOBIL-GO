@@ -43,6 +43,11 @@ type Config struct {
 	MQTTUsername  string
 	MQTTPassword  string
 
+	// microservicioMLL (Python): reporte de resultado real al finalizar un lote. Si
+	// MLLBaseURL queda vacío, el cliente opera en modo no-op (ver internal/infrastructure/mll).
+	MLLBaseURL string
+	MLLAPIKey  string
+
 	// Rate Limiting
 	RateLimitReqPerMin int
 	RateLimitBurst     int
@@ -85,6 +90,8 @@ func Load() (*Config, error) {
 		MQTTBrokerURL:      getEnv("MQTT_BROKER_URL", "mqtt://mosquitto:1883"),
 		MQTTUsername:       getEnv("MQTT_USERNAME", "kajve"),
 		MQTTPassword:       getEnv("MQTT_PASSWORD", "kajve_password"),
+		MLLBaseURL:         getEnv("MLL_BASE_URL", ""),
+		MLLAPIKey:          getEnv("MLL_API_KEY", ""),
 		RateLimitReqPerMin: getEnvInt("RATE_LIMIT_REQ_PER_MIN", 100),
 		RateLimitBurst:     getEnvInt("RATE_LIMIT_BURST", 20),
 		ReportsDir:         getEnv("REPORTS_DIR", "./storage/reportes"),

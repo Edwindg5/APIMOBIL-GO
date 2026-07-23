@@ -12,6 +12,7 @@ import (
 	"github.com/kajve/api-mobile/internal/delivery/http/handlers"
 	httpmiddleware "github.com/kajve/api-mobile/internal/delivery/http/middleware"
 	"github.com/kajve/api-mobile/internal/infrastructure/db"
+	"github.com/kajve/api-mobile/internal/infrastructure/mll"
 	"github.com/kajve/api-mobile/internal/infrastructure/reportgen"
 )
 
@@ -42,12 +43,16 @@ func main() {
 	reporteCollector := reportgen.NewCollector(lecturaRepo, alertaRepo, prediccionRepo, recomendacionRepo, historialRepo)
 	reporteGenerator := reportgen.NewGenerator(reporteCollector, cfg.ReportsDir)
 
+	// Cliente hacia microservicioMLL (reporte de resultado real al finalizar un lote).
+	// No-op si MLL_BASE_URL no está configurado.
+	mllClient := mll.NewClient(cfg.MLLBaseURL, cfg.MLLAPIKey)
+
 	// Servicios
 	authService := usecases.NewAuthService(cfg, usuarioRepo)
 	registerService := usecases.NewRegisterService(usuarioRepo)
 	profileService := usecases.NewProfileService(usuarioRepo)
 	deviceService := usecases.NewDeviceService(sensorRepo, loteRepo, historialRepo)
-	loteService := usecases.NewLoteService(loteRepo, historialRepo, lecturaRepo, alertaRepo, prediccionRepo, cfg.PlaceholderLoteUserID)
+	loteService := usecases.NewLoteService(loteRepo, historialRepo, lecturaRepo, alertaRepo, prediccionRepo, mllClient, cfg.PlaceholderLoteUserID)
 	lecturaService := usecases.NewLecturaService(lecturaRepo, loteRepo)
 	alertaService := usecases.NewAlertaService(alertaRepo, loteRepo, historialRepo)
 	prediccionService := usecases.NewPrediccionService(prediccionRepo, loteRepo)
@@ -115,6 +120,8 @@ func main() {
 			r.Put("/{id}", loteHandler.UpdateLote)
 			r.Delete("/{id}", loteHandler.CancelarLote)
 			r.Put("/{id}/finalizar", loteHandler.FinalizarLote)
+			r.Put("/{id}/catacion", loteHandler.ReportarCatacion)
+			r.Get("/{id}/reporte-narrativo", loteHandler.GetReporteNarrativo)
 			r.Get("/{id}/qr", loteHandler.GetQR)
 			r.Get("/{id}/lecturas", lecturaHandler.GetLecturas)
 			r.Get("/{id}/estadisticas", lecturaHandler.GetEstadisticas)

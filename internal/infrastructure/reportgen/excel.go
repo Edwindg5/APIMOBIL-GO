@@ -440,9 +440,11 @@ func (e *excelBuilder) buildPrediccionesYRecomendaciones() error {
 			if p.TiempoEstimadoHoras != nil {
 				tiempoVal = *p.TiempoEstimadoHoras
 			}
-			calidadVal := "Pendiente"
+			// CalidadEstimada es un puntaje escala SCA 0-100 (ya no una categoría) -- ver
+			// microservicioMLL/migration.sql paso 10.
+			var calidadVal interface{} = "Pendiente"
 			if p.CalidadEstimada != nil {
-				calidadVal = capitalize(*p.CalidadEstimada)
+				calidadVal = *p.CalidadEstimada
 			}
 			var confVal interface{} = "Pendiente"
 			if p.Confianza != nil {
@@ -470,7 +472,7 @@ func (e *excelBuilder) buildPrediccionesYRecomendaciones() error {
 			if err := f.SetCellStyle(sheet, cellRef(1, row), cellRef(1, row), numStyle); err != nil {
 				return err
 			}
-			if err := f.SetCellStyle(sheet, cellRef(2, row), cellRef(2, row), style); err != nil {
+			if err := f.SetCellStyle(sheet, cellRef(2, row), cellRef(2, row), numStyle); err != nil {
 				return err
 			}
 			if err := f.SetCellStyle(sheet, cellRef(3, row), cellRef(3, row), numStyle); err != nil {

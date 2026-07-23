@@ -15,7 +15,7 @@ func NewPrediccionRepository(db *PostgresDB) interfaces.PrediccionRepository {
 	return &PrediccionRepository{db: db}
 }
 
-const prediccionCols = `id_prediccion, id_lote, id_modelo, tiempo_estimado_horas, calidad_estimada, confianza, fecha_prediccion`
+const prediccionCols = `id_prediccion, id_lote, id_modelo, tiempo_estimado_horas, calidad_estimada, confianza, riesgo_lluvia_proxima, horas_anticipacion_lluvia, fecha_prediccion`
 
 func (r *PrediccionRepository) GetByLoteID(ctx context.Context, loteID int) ([]entities.Prediccion, error) {
 	rows, err := r.db.GetPool().Query(ctx, `
@@ -34,7 +34,7 @@ func (r *PrediccionRepository) GetByLoteID(ctx context.Context, loteID int) ([]e
 		var p entities.Prediccion
 		if err := rows.Scan(
 			&p.ID, &p.LoteID, &p.IDModelo, &p.TiempoEstimadoHoras, &p.CalidadEstimada,
-			&p.Confianza, &p.FechaPrediccion,
+			&p.Confianza, &p.RiesgoLluviaProxima, &p.HorasAnticipacionLluvia, &p.FechaPrediccion,
 		); err != nil {
 			return nil, err
 		}

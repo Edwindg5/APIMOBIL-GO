@@ -123,6 +123,28 @@ type ReclamarLoteRequest struct {
 	CodigoQR string `json:"codigo_qr" validate:"required"`
 }
 
+// FinalizarLoteRequest es la solicitud para finalizar un lote. Ya NO pide calidad -- el tiempo
+// real de secado es lo único que se conoce en este momento; se reenvía al microservicio de ML
+// (microservicioMLL) como retroalimentación real -- ver internal/infrastructure/mll/client.go --
+// para poder entrenar más adelante el modelo de tiempo restante. El puntaje de catación
+// (ReportarCatacionRequest, abajo) se reporta por separado, semanas después, cuando exista.
+type FinalizarLoteRequest struct {
+	TiempoRealHoras *float64 `json:"tiempo_real_horas" validate:"omitempty,gt=0"`
+}
+
+// ReportarCatacionRequest es la solicitud para reportar el puntaje real de catación de un lote ya
+// finalizado (escala SCA 0-100, protocolo de la Specialty Coffee Association -- ver Documento de
+// Calidad del Café, Sección 7). Se llama en cualquier momento después de finalizar_lote, no como
+// parte de ese mismo request, porque normalmente el resultado de catación llega semanas después
+// (cuando un catador/Q Grader evalúa el café), no al momento de terminar el secado.
+// PuntajeSCA usa la misma escala 0-100 que el microservicio de ML espera (CatacionEvent.puntaje_sca
+// en app/schemas/internal_events.py) -- si esto cambia de un lado, debe cambiar del otro.
+type ReportarCatacionRequest struct {
+	// Puntero, no float64 plano: un puntaje de 0 es un valor válido (aunque improbable) y no debe
+	// confundirse con "no se mandó el campo" -- required en un puntero sí distingue nil de 0.
+	PuntajeSCA *float64 `json:"puntaje_sca" validate:"required,gte=0,lte=100"`
+}
+
 // LinkDeviceResponse es la respuesta de vinculación (retorna el lote creado)
 type LinkDeviceResponse struct {
 	Lote    *LoteCafe `json:"lote"`
@@ -257,14 +279,33 @@ type Alerta struct {
 // Prediccion representa una predicción del ml-service
 // TiempoEstimadoHoras, CalidadEstimada y Confianza son nullable: el
 // microservicioML puede no haber generado esos valores todavía.
+// CalidadEstimada es un puntaje escala SCA 0-100 (ya no una categoría tipo "buena") -- ver
+// microservicioMLL/migration.sql paso 10. Es una aproximación del ML basada en condiciones de
+// secado, no una catación real.
 type Prediccion struct {
 	ID                  int       `db:"id_prediccion" json:"id_prediccion"`
 	LoteID              int       `db:"id_lote" json:"lote_id"`
 	IDModelo            int       `db:"id_modelo" json:"id_modelo"`
 	TiempoEstimadoHoras *float64  `db:"tiempo_estimado_horas" json:"tiempo_estimado_horas"`
-	CalidadEstimada     *string   `db:"calidad_estimada" json:"calidad_estimada"`
+	CalidadEstimada     *float64  `db:"calidad_estimada" json:"calidad_estimada"`
 	Confianza           *float64  `db:"confianza" json:"confianza"`
-	FechaPrediccion     time.Time `db:"fecha_prediccion" json:"fecha_prediccion"`
+	// Salida del algoritmo genético (AG) de riesgo de lluvia (microservicioMLL:
+	// app/services/rain_predictor.py). Null si el pipeline no llegó a correr ese predictor
+	// para esta predicción (p.ej. sin lecturas de humedad/temperatura suficientes).
+	RiesgoLluviaProxima     *bool     `db:"riesgo_lluvia_proxima" json:"riesgo_lluvia_proxima"`
+	HorasAnticipacionLluvia *int      `db:"horas_anticipacion_lluvia" json:"horas_anticipacion_lluvia"`
+	FechaPrediccion         time.Time `db:"fecha_prediccion" json:"fecha_prediccion"`
+}
+
+// ReporteNarrativo es el reporte en lenguaje natural (NLG, microservicioMLL: NLP/generar_reporte.py)
+// de un lote -- combina alertas, predicciones y recomendaciones en un solo texto legible. Se
+// genera al momento en cada llamada (siempre refleja el estado actual del lote), no es un texto
+// fijo calculado una sola vez.
+type ReporteNarrativo struct {
+	IDReporte     int    `json:"id_reporte"`
+	IDLote        int    `json:"id_lote"`
+	ReporteTexto  string `json:"reporte_texto"`
+	FechaGenerado string `json:"fecha_generado"`
 }
 
 // Recomendacion representa una recomendación para un lote
@@ -317,11 +358,12 @@ type DashboardLoteResumen struct {
 }
 
 // UltimaPrediccionDashboard predicción más reciente del dashboard
+// CalidadEstimada es un puntaje escala SCA 0-100 -- ver comentario en Prediccion, arriba.
 type UltimaPrediccionDashboard struct {
 	IDLote              int       `json:"id_lote"`
 	NombreLote          string    `json:"nombre_lote"`
 	TiempoEstimadoHoras *float64  `json:"tiempo_estimado_horas"`
-	CalidadEstimada     *string   `json:"calidad_estimada"`
+	CalidadEstimada     *float64  `json:"calidad_estimada"`
 	FechaPrediccion     time.Time `json:"fecha_prediccion"`
 }
 

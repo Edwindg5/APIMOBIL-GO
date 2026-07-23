@@ -402,10 +402,16 @@ func (b *pdfBuilder) drawPrediccionesSection() {
 			}
 			confStr = fmt.Sprintf("%.0f%%", conf)
 		}
+		// CalidadEstimada es un puntaje escala SCA 0-100 (ya no una categoría) -- ver
+		// microservicioMLL/migration.sql paso 10.
+		calidadStr := "Pendiente"
+		if p.CalidadEstimada != nil {
+			calidadStr = fmt.Sprintf("%.0f/100", *p.CalidadEstimada)
+		}
 		rows = append(rows, []string{
 			p.FechaPrediccion.Format("02/01/2006 15:04"),
 			tiempoStr,
-			capitalizePtr(p.CalidadEstimada),
+			calidadStr,
 			confStr,
 		})
 	}

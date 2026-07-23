@@ -166,7 +166,18 @@ func (h *LoteHandler) FinalizarLote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lote, err := h.loteService.FinalizarLote(r.Context(), loteID, userID)
+	var req entities.FinalizarLoteRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error": "invalid request body"}`, http.StatusBadRequest)
+		return
+	}
+
+	if err := h.validator.Struct(req); err != nil {
+		http.Error(w, `{"error": "validation failed: `+err.Error()+`"}`, http.StatusBadRequest)
+		return
+	}
+
+	lote, err := h.loteService.FinalizarLote(r.Context(), loteID, userID, &req)
 	if err != nil {
 		switch err.Error() {
 		case "lote not found or not in process":
@@ -180,6 +191,87 @@ func (h *LoteHandler) FinalizarLote(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(lote)
+}
+
+// ReportarCatacion maneja PUT /lotes/{id}/catacion -- reporta el puntaje real de catación
+// (escala SCA 0-100) de un lote ya finalizado. Separado de FinalizarLote a propósito: este dato
+// normalmente no existe todavía cuando el lote termina de secarse, llega semanas después.
+func (h *LoteHandler) ReportarCatacion(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, `{"error": "unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+
+	loteID, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, `{"error": "invalid lote id"}`, http.StatusBadRequest)
+		return
+	}
+
+	var req entities.ReportarCatacionRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error": "invalid request body"}`, http.StatusBadRequest)
+		return
+	}
+
+	if err := h.validator.Struct(req); err != nil {
+		http.Error(w, `{"error": "validation failed: `+err.Error()+`"}`, http.StatusBadRequest)
+		return
+	}
+
+	if err := h.loteService.ReportarCatacion(r.Context(), loteID, userID, &req); err != nil {
+		switch err.Error() {
+		case "lote not found":
+			http.Error(w, `{"error": "lote not found"}`, http.StatusNotFound)
+		case "unauthorized":
+			http.Error(w, `{"error": "unauthorized"}`, http.StatusForbidden)
+		case "lote not finalized yet":
+			http.Error(w, `{"error": "el lote todavía no ha sido finalizado"}`, http.StatusConflict)
+		default:
+			log.Printf("ReportarCatacion error (lote_id=%d, user_id=%d): %v", loteID, userID, err)
+			http.Error(w, `{"error": "internal server error"}`, http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Puntaje de catación reportado"})
+}
+
+// GetReporteNarrativo maneja GET /lotes/{id}/reporte-narrativo -- proxya el reporte NLG que
+// genera microservicioMLL (NLP/generar_reporte.py) combinando alertas, predicciones y
+// recomendaciones del lote en un solo texto. Se genera al momento en cada llamada: no hay caché
+// en Go, siempre refleja el estado actual del lote.
+func (h *LoteHandler) GetReporteNarrativo(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, `{"error": "unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+
+	loteID, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, `{"error": "invalid lote id"}`, http.StatusBadRequest)
+		return
+	}
+
+	reporte, err := h.loteService.ObtenerReporteNarrativo(r.Context(), loteID, userID)
+	if err != nil {
+		switch err.Error() {
+		case "lote not found":
+			http.Error(w, `{"error": "lote not found"}`, http.StatusNotFound)
+		case "unauthorized":
+			http.Error(w, `{"error": "unauthorized"}`, http.StatusForbidden)
+		default:
+			log.Printf("GetReporteNarrativo error (lote_id=%d, user_id=%d): %v", loteID, userID, err)
+			http.Error(w, `{"error": "no se pudo generar el reporte narrativo"}`, http.StatusBadGateway)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(reporte)
 }
 
 // CancelarLote maneja DELETE /lotes/{id}

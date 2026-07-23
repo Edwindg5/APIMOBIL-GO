@@ -81,13 +81,23 @@ CREATE TABLE IF NOT EXISTS alertas (
 
 -- Tabla de predicciones
 -- id_modelo referencia una tabla "modelos" fuera del alcance de este esquema; se deja sin FK.
+-- calidad_estimada: puntaje 0-100 (escala SCA), no una categoría. Es una aproximación del ML
+-- basada en condiciones de secado, no una catación real -- ver microservicioMLL/migration.sql
+-- paso 10 para el detalle de la migración desde la escala categórica anterior.
+-- riesgo_lluvia_proxima / horas_anticipacion_lluvia: salida del algoritmo genético (AG) de
+-- riesgo de lluvia (microservicioMLL/app/services/rain_predictor.py). Null si el pipeline no
+-- llegó a correr ese predictor para esta predicción. Columnas ya existentes en la Neon
+-- compartida (microservicioMLL/migration.sql); se agregan aquí solo para que este init.sql
+-- de referencia describa el esquema real completo.
 CREATE TABLE IF NOT EXISTS predicciones (
     id_prediccion         SERIAL PRIMARY KEY,
     id_lote               INTEGER NOT NULL REFERENCES lotes_cafe(id_lote) ON DELETE CASCADE,
     id_modelo             INTEGER NOT NULL,
     tiempo_estimado_horas NUMERIC(5, 2),
-    calidad_estimada      VARCHAR(50),
+    calidad_estimada      NUMERIC(5, 2) CHECK (calidad_estimada IS NULL OR (calidad_estimada >= 0 AND calidad_estimada <= 100)),
     confianza             NUMERIC(5, 2),
+    riesgo_lluvia_proxima    BOOLEAN,
+    horas_anticipacion_lluvia SMALLINT,
     fecha_prediccion      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
