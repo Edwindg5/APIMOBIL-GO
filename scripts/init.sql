@@ -60,8 +60,8 @@ CREATE TABLE IF NOT EXISTS lecturas_ambientales (
     id_lectura  BIGSERIAL PRIMARY KEY,
     id_sensor   INTEGER NOT NULL REFERENCES sensores(id_sensor) ON DELETE CASCADE,
     id_lote     INTEGER NOT NULL REFERENCES lotes_cafe(id_lote) ON DELETE CASCADE,
-    temperatura NUMERIC(5, 2),
-    humedad     NUMERIC(5, 2),
+    temperatura   NUMERIC(5, 2),
+    humedad_grano NUMERIC(5, 2),
     timestamp   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

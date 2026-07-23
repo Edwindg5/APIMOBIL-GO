@@ -16,7 +16,7 @@ func NewLecturaRepository(db *PostgresDB) interfaces.LecturaRepository {
 	return &LecturaRepository{db: db}
 }
 
-const lecturaCols = `id_lectura, id_lote, id_sensor, temperatura, humedad, timestamp`
+const lecturaCols = `id_lectura, id_lote, id_sensor, temperatura, humedad_grano, timestamp`
 
 func scanLectura(rows interface{ Scan(...any) error }, l *entities.LecturaAmbiental) error {
 	return rows.Scan(&l.ID, &l.LoteID, &l.SensorID, &l.Temperatura, &l.Humedad, &l.Timestamp)
@@ -84,9 +84,9 @@ func (r *LecturaRepository) GetEstadisticas(ctx context.Context, loteID int) (*e
 			COALESCE(AVG(temperatura), 0),
 			COALESCE(MIN(temperatura), 0),
 			COALESCE(MAX(temperatura), 0),
-			COALESCE(AVG(humedad), 0),
-			COALESCE(MIN(humedad), 0),
-			COALESCE(MAX(humedad), 0),
+			COALESCE(AVG(humedad_grano), 0),
+			COALESCE(MIN(humedad_grano), 0),
+			COALESCE(MAX(humedad_grano), 0),
 			COUNT(*),
 			MAX(timestamp)
 		FROM lecturas_ambientales
@@ -128,7 +128,7 @@ func (r *LecturaRepository) GetEstadisticas(ctx context.Context, loteID int) (*e
 
 func (r *LecturaRepository) Create(ctx context.Context, lectura *entities.LecturaAmbiental) error {
 	return r.db.GetPool().QueryRow(ctx, `
-		INSERT INTO lecturas_ambientales (id_lote, id_sensor, temperatura, humedad, timestamp)
+		INSERT INTO lecturas_ambientales (id_lote, id_sensor, temperatura, humedad_grano, timestamp)
 		VALUES ($1, $2, $3, $4, NOW())
 		RETURNING id_lectura, timestamp
 	`, lectura.LoteID, lectura.SensorID, lectura.Temperatura, lectura.Humedad,

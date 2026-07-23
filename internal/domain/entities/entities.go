@@ -221,7 +221,7 @@ type LecturaAmbiental struct {
 	SensorID    int       `db:"id_sensor" json:"sensor_id"`
 	LoteID      int       `db:"id_lote" json:"lote_id"`
 	Temperatura float64   `db:"temperatura" json:"temperatura"`
-	Humedad     float64   `db:"humedad" json:"humedad"`
+	Humedad     float64   `db:"humedad_grano" json:"humedad"`
 	Timestamp   time.Time `db:"timestamp" json:"timestamp"`
 }
 

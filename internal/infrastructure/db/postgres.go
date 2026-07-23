@@ -20,6 +20,15 @@ func NewPostgresDB(connString string) (*PostgresDB, error) {
 		return nil, fmt.Errorf("error parsing database config: %w", err)
 	}
 
+	// Neon usa PgBouncer en modo transacción (-pooler): los prepared statements
+	// nombrados (modo por defecto) chocan porque el backend físico puede cambiar
+	// entre queries (SQLSTATE 08P01). QueryExecModeExec usa statements sin nombre
+	// (no cacheados) pero mantiene el binding de parámetros server-side vía Bind,
+	// sin interpolación client-side. No soporta múltiples sentencias en un mismo
+	// string (ver injectUserID en usuario_repository.go:148 / UpdatePassword,
+	// bug preexistente e independiente de este cambio).
+	config.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeExec
+
 	// Configuración de pool
 	config.MaxConns = 25
 	config.MinConns = 5
