@@ -73,7 +73,9 @@ func (c *Collector) Collect(ctx context.Context, lote *entities.LoteCafe, usuari
 		return nil, err
 	}
 
-	predicciones, err := c.prediccionRepo.GetByLoteID(ctx, lote.ID)
+	// El reporte PDF/Excel sí quiere el historial completo de predicciones del lote (a diferencia
+	// de la lista de la app móvil, que ahora se limita por default -- ver prediccion_handler.go).
+	predicciones, err := c.prediccionRepo.GetByLoteID(ctx, lote.ID, 0)
 	if err != nil {
 		return nil, err
 	}

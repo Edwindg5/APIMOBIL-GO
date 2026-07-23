@@ -97,7 +97,8 @@ type AlertaService interface {
 
 // PrediccionService define los casos de uso de predicciones
 type PrediccionService interface {
-	GetPredicciones(ctx context.Context, loteID, usuarioID int) ([]entities.Prediccion, error)
+	// limit <= 0 significa "sin límite" -- ver comentario en interfaces.PrediccionRepository.
+	GetPredicciones(ctx context.Context, loteID, usuarioID, limit int) ([]entities.Prediccion, error)
 }
 
 // RecomendacionService define los casos de uso de recomendaciones

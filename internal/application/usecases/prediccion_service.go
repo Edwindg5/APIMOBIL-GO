@@ -25,8 +25,8 @@ func NewPrediccionService(
 	}
 }
 
-// GetPredicciones obtiene las predicciones de un lote
-func (s *PrediccionService) GetPredicciones(ctx context.Context, loteID, usuarioID int) ([]entities.Prediccion, error) {
+// GetPredicciones obtiene las predicciones de un lote. limit <= 0 significa "sin límite".
+func (s *PrediccionService) GetPredicciones(ctx context.Context, loteID, usuarioID, limit int) ([]entities.Prediccion, error) {
 	// Verificar que el lote pertenece al usuario
 	lote, err := s.loteRepository.GetByID(ctx, loteID)
 	if err != nil {
@@ -41,7 +41,7 @@ func (s *PrediccionService) GetPredicciones(ctx context.Context, loteID, usuario
 		return nil, errors.New("unauthorized")
 	}
 
-	predicciones, err := s.prediccionRepository.GetByLoteID(ctx, loteID)
+	predicciones, err := s.prediccionRepository.GetByLoteID(ctx, loteID, limit)
 	if err != nil {
 		return nil, fmt.Errorf("error getting predicciones: %w", err)
 	}

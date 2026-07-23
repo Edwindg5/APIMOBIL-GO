@@ -65,7 +65,12 @@ type AlertaRepository interface {
 
 // PrediccionRepository define las operaciones para predicciones
 type PrediccionRepository interface {
-	GetByLoteID(ctx context.Context, loteID int) ([]entities.Prediccion, error)
+	// limit <= 0 significa "sin límite" (se mantiene el comportamiento anterior para quien lo
+	// necesite). Se agregó tras detectar que la app móvil pedía y renderizaba TODO el historial
+	// de un lote de golpe (podían ser cientos/miles de filas acumuladas a lo largo de todo el
+	// secado) -- ver GetPredicciones en prediccion_handler.go para el límite que sí se aplica
+	// por default desde el endpoint HTTP.
+	GetByLoteID(ctx context.Context, loteID int, limit int) ([]entities.Prediccion, error)
 	Create(ctx context.Context, prediccion *entities.Prediccion) error
 }
 

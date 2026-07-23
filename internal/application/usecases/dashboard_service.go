@@ -107,8 +107,8 @@ func (s *DashboardService) GetDashboard(ctx context.Context, usuarioID int) (*en
 			}
 		}
 
-		// Última predicción del lote (buscar la más reciente global)
-		preds, _ := s.prediccionRepo.GetByLoteID(ctx, lote.ID)
+		// Última predicción del lote (buscar la más reciente global) -- solo hace falta 1.
+		preds, _ := s.prediccionRepo.GetByLoteID(ctx, lote.ID, 1)
 		if len(preds) > 0 && preds[0].FechaPrediccion.After(latestPredTime) {
 			latestPredTime = preds[0].FechaPrediccion
 			resp.UltimaPrediccion = &entities.UltimaPrediccionDashboard{

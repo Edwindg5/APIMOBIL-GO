@@ -36,7 +36,28 @@ func (h *PrediccionHandler) GetPredicciones(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	predicciones, err := h.prediccionService.GetPredicciones(r.Context(), loteID, userID)
+	// Default 15: sin esto, un lote con muchos ciclos de secado acumulados devolvía TODO su
+	// historial de predicciones de golpe -- la app móvil lo renderizaba entero en una lista sin
+	// paginar y se ponía lenta. Se bajó de 30 a 15 a pedido explícito ("solo los más
+	// relevantes"). ?limit= lo puede subir/bajar (tope 200 para no reabrir el mismo problema si
+	// algún caller manda un valor absurdo), o pedir explícitamente 0 para "sin límite".
+	limit := 15
+	if raw := r.URL.Query().Get("limit"); raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil || parsed < 0 {
+			http.Error(w, `{"error": "invalid limit"}`, http.StatusBadRequest)
+			return
+		}
+		if parsed == 0 {
+			limit = 0 // sin límite, pedido explícitamente
+		} else if parsed > 200 {
+			limit = 200
+		} else {
+			limit = parsed
+		}
+	}
+
+	predicciones, err := h.prediccionService.GetPredicciones(r.Context(), loteID, userID, limit)
 	if err != nil {
 		statusCode := http.StatusInternalServerError
 		if err.Error() == "unauthorized" {

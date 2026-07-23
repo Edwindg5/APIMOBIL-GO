@@ -117,8 +117,10 @@ func (s *LoteService) GetLoteDetalle(ctx context.Context, loteID, usuarioID int)
 		}
 	}
 
-	// Última predicción
-	predicciones, err := s.prediccionRepo.GetByLoteID(ctx, loteID)
+	// Última predicción -- solo hace falta la más reciente aquí, no todo el historial (antes se
+	// traía TODO y solo se usaba predicciones[0]; ver comentario de límite en
+	// interfaces.PrediccionRepository.GetByLoteID).
+	predicciones, err := s.prediccionRepo.GetByLoteID(ctx, loteID, 1)
 	if err == nil && len(predicciones) > 0 {
 		p := predicciones[0]
 		detalle.UltimaPrediccion = &p

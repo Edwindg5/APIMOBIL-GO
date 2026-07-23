@@ -17,13 +17,20 @@ func NewPrediccionRepository(db *PostgresDB) interfaces.PrediccionRepository {
 
 const prediccionCols = `id_prediccion, id_lote, id_modelo, tiempo_estimado_horas, calidad_estimada, confianza, riesgo_lluvia_proxima, horas_anticipacion_lluvia, fecha_prediccion`
 
-func (r *PrediccionRepository) GetByLoteID(ctx context.Context, loteID int) ([]entities.Prediccion, error) {
-	rows, err := r.db.GetPool().Query(ctx, `
-		SELECT `+prediccionCols+`
+func (r *PrediccionRepository) GetByLoteID(ctx context.Context, loteID int, limit int) ([]entities.Prediccion, error) {
+	query := `
+		SELECT ` + prediccionCols + `
 		FROM predicciones
 		WHERE id_lote = $1
 		ORDER BY fecha_prediccion DESC
-	`, loteID)
+	`
+	args := []any{loteID}
+	if limit > 0 {
+		query += ` LIMIT $2`
+		args = append(args, limit)
+	}
+
+	rows, err := r.db.GetPool().Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
