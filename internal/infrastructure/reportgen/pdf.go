@@ -390,15 +390,23 @@ func (b *pdfBuilder) drawPrediccionesSection() {
 	}
 	rows := make([][]string, 0, len(b.data.Predicciones))
 	for _, p := range b.data.Predicciones {
-		conf := p.Confianza
-		if conf <= 1.0 {
-			conf *= 100
+		tiempoStr := "Pendiente"
+		if p.TiempoEstimadoHoras != nil {
+			tiempoStr = fmt.Sprintf("%.1f h", *p.TiempoEstimadoHoras)
+		}
+		confStr := "Pendiente"
+		if p.Confianza != nil {
+			conf := *p.Confianza
+			if conf <= 1.0 {
+				conf *= 100
+			}
+			confStr = fmt.Sprintf("%.0f%%", conf)
 		}
 		rows = append(rows, []string{
 			p.FechaPrediccion.Format("02/01/2006 15:04"),
-			fmt.Sprintf("%.1f h", p.TiempoEstimadoHoras),
-			capitalize(p.CalidadEstimada),
-			fmt.Sprintf("%.0f%%", conf),
+			tiempoStr,
+			capitalizePtr(p.CalidadEstimada),
+			confStr,
 		})
 	}
 	b.drawTable(cols, rows, nil)

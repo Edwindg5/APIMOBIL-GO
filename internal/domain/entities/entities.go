@@ -255,13 +255,15 @@ type Alerta struct {
 }
 
 // Prediccion representa una predicción del ml-service
+// TiempoEstimadoHoras, CalidadEstimada y Confianza son nullable: el
+// microservicioML puede no haber generado esos valores todavía.
 type Prediccion struct {
 	ID                  int       `db:"id_prediccion" json:"id_prediccion"`
 	LoteID              int       `db:"id_lote" json:"lote_id"`
 	IDModelo            int       `db:"id_modelo" json:"id_modelo"`
-	TiempoEstimadoHoras float64   `db:"tiempo_estimado_horas" json:"tiempo_estimado_horas"`
-	CalidadEstimada     string    `db:"calidad_estimada" json:"calidad_estimada"`
-	Confianza           float64   `db:"confianza" json:"confianza"`
+	TiempoEstimadoHoras *float64  `db:"tiempo_estimado_horas" json:"tiempo_estimado_horas"`
+	CalidadEstimada     *string   `db:"calidad_estimada" json:"calidad_estimada"`
+	Confianza           *float64  `db:"confianza" json:"confianza"`
 	FechaPrediccion     time.Time `db:"fecha_prediccion" json:"fecha_prediccion"`
 }
 
@@ -318,8 +320,8 @@ type DashboardLoteResumen struct {
 type UltimaPrediccionDashboard struct {
 	IDLote              int       `json:"id_lote"`
 	NombreLote          string    `json:"nombre_lote"`
-	TiempoEstimadoHoras float64   `json:"tiempo_estimado_horas"`
-	CalidadEstimada     string    `json:"calidad_estimada"`
+	TiempoEstimadoHoras *float64  `json:"tiempo_estimado_horas"`
+	CalidadEstimada     *string   `json:"calidad_estimada"`
 	FechaPrediccion     time.Time `json:"fecha_prediccion"`
 }
 

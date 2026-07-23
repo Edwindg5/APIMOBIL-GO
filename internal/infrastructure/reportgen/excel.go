@@ -436,20 +436,32 @@ func (e *excelBuilder) buildPrediccionesYRecomendaciones() error {
 			if i%2 == 1 {
 				style, numStyle = e.styleBodyAlt, e.styleBodyNumA
 			}
-			conf := p.Confianza
-			if conf <= 1.0 {
-				conf *= 100
+			var tiempoVal interface{} = "Pendiente"
+			if p.TiempoEstimadoHoras != nil {
+				tiempoVal = *p.TiempoEstimadoHoras
+			}
+			calidadVal := "Pendiente"
+			if p.CalidadEstimada != nil {
+				calidadVal = capitalize(*p.CalidadEstimada)
+			}
+			var confVal interface{} = "Pendiente"
+			if p.Confianza != nil {
+				c := *p.Confianza
+				if c <= 1.0 {
+					c *= 100
+				}
+				confVal = c
 			}
 			if err := f.SetCellValue(sheet, cellRef(0, row), p.FechaPrediccion.Format("02/01/2006 15:04")); err != nil {
 				return err
 			}
-			if err := f.SetCellValue(sheet, cellRef(1, row), p.TiempoEstimadoHoras); err != nil {
+			if err := f.SetCellValue(sheet, cellRef(1, row), tiempoVal); err != nil {
 				return err
 			}
-			if err := f.SetCellValue(sheet, cellRef(2, row), capitalize(p.CalidadEstimada)); err != nil {
+			if err := f.SetCellValue(sheet, cellRef(2, row), calidadVal); err != nil {
 				return err
 			}
-			if err := f.SetCellValue(sheet, cellRef(3, row), conf); err != nil {
+			if err := f.SetCellValue(sheet, cellRef(3, row), confVal); err != nil {
 				return err
 			}
 			if err := f.SetCellStyle(sheet, cellRef(0, row), cellRef(0, row), style); err != nil {
